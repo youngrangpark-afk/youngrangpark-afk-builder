@@ -1,36 +1,34 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GEO 스나이퍼 — 랜딩 페이지
 
-## Getting Started
+AI 추천 목록에 내 브랜드 자리 만들기. 니치 홈프레이그런스 브랜드를 위한 GEO 운영 도구의 랜딩 페이지예요.
+(AI 프로덕트 빌더 클럽 3기 1주차 실습)
 
-First, run the development server:
+## 주소
+
+- 사이트: https://youngrangpark-afk-builder.vercel.app
+- GitHub 저장소: https://github.com/youngrangpark-afk/youngrangpark-afk-builder
+- Supabase 대시보드: https://supabase.com/dashboard/project/hwjpuhivnwemnpetoynf
+
+## Supabase
+
+연결만 해 둔 상태예요. 다음 주에 신청 저장 같은 기능을 붙일 때 씁니다.
+DB 비밀번호와 키는 내 컴퓨터의 `.env.local` 에만 있고, GitHub 에는 올라가지 않아요.
+
+## 다시 고칠 때
+
+1. Claude 나 Codex 앱에서 이 폴더를 열고, 고칠 곳을 말해요.
+2. 다 고쳤으면 아래 한 줄로 저장하고 올려요. GitHub 에 올라가면 Vercel 이 사이트를 자동으로 다시 배포해요.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git add -A && git commit -m "수정" && git push
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 도메인을 붙이고 싶으면
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+vercel.com 에서 이 프로젝트 → Settings → Domains 에서 내 도메인을 추가해요.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 파일 안내
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `ONEPAGER.md` — 아이템 1pager 초안 (1주차 과제). 다음 주 프로토타입을 만들 때 AI 에게 이 파일을 먼저 읽혀요.
+- `SITE.md` — 랜딩 페이지 문구
+- `src/app/page.tsx` — 랜딩 페이지 화면
