@@ -238,10 +238,11 @@ export default function Home() {
           <h2 className="text-2xl font-bold md:text-4xl">
             우리 브랜드는 <span className="text-brand">AI 에서 몇 번</span> 불릴까요?
           </h2>
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
             <ExampleReportButton />
+            <StartButton />
           </div>
-          <p className="text-sm text-muted-foreground">무료 진단 1회는 곧 열려요.</p>
+          <p className="text-sm text-muted-foreground">브랜드 입력까지 열려 있어요. 질문 추천 · 진단은 곧 열려요.</p>
         </div>
       </section>
 
