@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Crosshair, Info, Mountain } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CandidatesPanel } from "@/components/app/candidates-panel";
 import { parseDraft, useDraftRaw } from "@/lib/draft";
+import { suggestKey } from "@/lib/questions";
 
-// `/app/questions` — 지금은 입력한 브랜드 요약만 (질문 추천은 T-07, 고르기는 T-08 에서 채운다)
+// `/app/questions` — 브랜드 요약 + 추천 질문 후보 10개 (T-07). 5개 고르기는 T-08 에서 채운다.
 export function QuestionsView() {
   const raw = useDraftRaw();
   if (raw === undefined) {
@@ -75,25 +77,10 @@ export function QuestionsView() {
         </CardContent>
       </Card>
 
-      <Card className="card-glow rounded-2xl">
-        <CardHeader className="gap-3">
-          <Badge variant="outline" className="w-fit gap-1.5 rounded-full border-primary/50">
-            <Info className="size-3" /> 준비 중
-          </Badge>
-          <CardTitle className="text-xl leading-snug">질문 추천은 다음 단계에서 열려요</CardTitle>
-          <CardDescription className="text-base leading-relaxed">
-            곧 이 자리에 AI 가 추천한 질문 10개가 나와요. 그중 5개를 골라 진단을 시작해요.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
-          <Badge variant="secondary" className="gap-1 rounded-full">
-            <Crosshair className="size-3" /> 공략형 5개
-          </Badge>
-          <Badge variant="secondary" className="gap-1 rounded-full">
-            <Mountain className="size-3" /> 장기형 5개
-          </Badge>
-        </CardContent>
-      </Card>
+      <CandidatesPanel
+        key={suggestKey({ name: draft.name, category: draft.category, benchmarkBrands: draft.benchmarkBrands })}
+        draft={draft}
+      />
     </div>
   );
 }
