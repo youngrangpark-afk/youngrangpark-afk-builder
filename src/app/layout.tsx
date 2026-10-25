@@ -11,15 +11,16 @@ const pretendard = localFont({
 });
 
 const siteUrl = "https://youngrangpark-afk-builder.vercel.app";
-const title = "GEO 스나이퍼 — AI 추천 목록에 내 브랜드 자리 만들기";
+const title = "GEO 스나이퍼 — 브랜드명만 넣으면 AI 검색 노출 진단";
 const description =
-  "니치 홈프레이그런스 브랜드를 위한 GEO 운영 도구. 기준 브랜드가 왜 추천되는지 찾아, 이번 주 할 일로 바꿔 드려요.";
+  "ChatGPT · Gemini 가 우리 브랜드를 얼마나 자주 말하는지, 그리고 이번 주에 할 일 3가지를 한 장으로 보여 드려요.";
+const keywords = ["GEO", "AI 검색 노출", "1인 창업", "브랜드 마케팅"];
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title,
   description,
-  keywords: ["니치 홈프레이그런스", "GEO", "AI 추천 노출", "브랜드 운영 자동화"],
+  keywords,
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
@@ -41,7 +42,8 @@ const jsonLd = {
   url: siteUrl,
   applicationCategory: "BusinessApplication",
   inLanguage: "ko",
-  keywords: "니치 홈프레이그런스, GEO, AI 추천 노출, 브랜드 운영 자동화",
+  keywords: keywords.join(", "),
+  audience: { "@type": "Audience", audienceType: "마케터 없이 브랜드를 운영하는 1인 창업자" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

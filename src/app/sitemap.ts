@@ -5,7 +5,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
       url: "https://youngrangpark-afk-builder.vercel.app",
-      lastModified: "2026-10-20",
+      lastModified: "2026-10-25",
       changeFrequency: "weekly",
       priority: 1,
     },

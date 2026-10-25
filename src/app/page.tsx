@@ -1,5 +1,8 @@
+import Link from "next/link";
+import { ArrowRight, CircleCheck, CircleDot, Crosshair, Mountain } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -10,89 +13,60 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { StartButton } from "@/components/start-button";
 
+// 랜딩 (T-02). 문구는 SITE.md, 모양은 DESIGN.md 를 따른다.
 const pains = [
-  "어떤 질문을 AI 에 던져 봐야 할지부터 막막하다",
-  "\"내 브랜드가 나오나\"만 보면 매번 \"안 나옴\"이라 다음 할 일이 없다",
-  "AI 3곳 × 질문 10개를 손으로 묻고 옮겨 적기엔 시간이 너무 든다",
+  "어떤 질문에서 노출을 노려야 할지 모르겠어요",
+  "“나오나 안 나오나”만 보면 다음에 할 일이 없어요",
+  "AI 여러 곳에 반복해 묻고 정리할 시간이 없어요",
 ];
 
 const steps = [
   {
-    title: "질문과 기준 브랜드 정하기",
-    body: "상황 · 가격대별 질문과 함께 묶이고 싶은 기준 브랜드를 정한다",
+    label: "브랜드 입력",
+    title: "브랜드명과 카테고리만 넣어요",
+    checks: ["함께 비교할 기준 브랜드는 원하면 더해요"],
   },
   {
-    title: "세 AI 에 같은 질문 던지기",
-    body: "ChatGPT · Gemini · Claude 에 같은 질문을 던져 추천 브랜드와 인용 출처를 모은다",
+    label: "질문 고르기",
+    title: "AI 가 추천한 질문 10개 중 5개를 골라요",
+    checks: ["공략형 · 장기형을 자유롭게 섞어요", "고르고 나서 고칠 수도 있어요"],
   },
   {
-    title: "이번 주 할 일 받기",
-    body: "출처를 매체 종류별로 나눠 \"자료를 깔 곳\"과 이번 주 할 일을 한 장으로 받는다",
+    label: "리포트 받기",
+    title: "노출 빈도 · 경쟁사 · 인용 출처 · 이번 주 할 일 3개",
+    checks: ["ChatGPT · Gemini 에 웹 검색을 켜고 여러 번 물어요"],
   },
 ];
 
-const brandNeeds = [
-  "집들이 · 선물 같은 상황별, 가격대별 질문 세팅",
-  "함께 묶이고 싶은 기준 브랜드와 같이 추천되는지",
-  "언론 보도 · 쇼핑 검색 · 블로그 · 커뮤니티 중 어디에 배경 자료를 깔아야 하는지",
+const differences = [
+  <>
+    측정 툴은 &ldquo;나오나&rdquo;를 보여 주고, GEO 스나이퍼는{" "}
+    <strong className="text-foreground">&ldquo;왜 나오나 → 그래서 할 일&rdquo;</strong>까지 보여 줘요.
+  </>,
+  <>
+    무료 GPT 에 직접 물으면 한 번의 답이지만, 여기서는 같은 질문을 여러 AI 에 여러 번 묻고 원문과 출처를
+    함께 남겨요.
+  </>,
+  <>결과는 정해진 질문과 검색 조건에서 받은 답이라, 그 조건을 리포트에 함께 적어 드려요.</>,
 ];
 
-const keywords = ["니치 홈프레이그런스", "GEO", "AI 추천 노출", "브랜드 운영 자동화"];
+const keywords = ["GEO", "AI 검색 노출", "1인 창업", "브랜드 마케팅"];
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function ExampleReportButton() {
   return (
-    <p className="text-sm font-semibold tracking-wide text-muted-foreground">
-      {children}
-    </p>
+    <Button asChild size="lg" className="bg-brand h-12 px-6 text-base hover:opacity-90">
+      <Link href="/app/reports/example">
+        예시 리포트 보기 <ArrowRight />
+      </Link>
+    </Button>
   );
 }
 
-// 예시 화면 — 제품 첫 화면을 shadcn 컴포넌트로만 그린 것. 실제 데이터가 아니다.
-function ExampleScreen() {
-  const sources = [
-    { label: "블로그", width: "w-4/5" },
-    { label: "매거진", width: "w-3/5" },
-    { label: "커뮤니티", width: "w-2/5" },
-    { label: "쇼핑 검색", width: "w-1/4" },
-  ];
+function SectionHead({ eyebrow, title }: { eyebrow: string; title: React.ReactNode }) {
   return (
-    <div className="space-y-2">
-      <p className="text-xs text-muted-foreground">예시 화면</p>
-      <Card className="gap-0 py-0">
-        <CardHeader className="border-b py-4">
-          <CardTitle className="text-base">이번 주 리포트</CardTitle>
-          <CardDescription>질문 · 집들이 선물 디퓨저 추천</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-5 py-5">
-          <div className="flex flex-wrap gap-1.5">
-            <Badge variant="outline">ChatGPT</Badge>
-            <Badge variant="outline">Gemini</Badge>
-            <Badge variant="outline">Claude</Badge>
-          </div>
-          <div className="space-y-2.5">
-            <p className="text-xs font-semibold">기준 브랜드가 인용된 매체</p>
-            {sources.map((s) => (
-              <div key={s.label} className="flex items-center gap-3">
-                <span className="w-16 shrink-0 text-xs text-muted-foreground">
-                  {s.label}
-                </span>
-                <div className="h-1.5 flex-1 bg-muted">
-                  <div className={`h-full bg-foreground ${s.width}`} />
-                </div>
-              </div>
-            ))}
-          </div>
-          <Separator />
-          <div className="space-y-2">
-            <p className="text-xs font-semibold">이번 주 할 일 3가지</p>
-            <ol className="space-y-1.5 text-xs text-muted-foreground">
-              <li>1. 자주 인용된 블로그에 제품 소개 자료 보내기</li>
-              <li>2. 상세페이지에 향 계열 · 선물 상황 정리하기</li>
-              <li>3. 쇼핑 검색에 상품 정보 등록하기</li>
-            </ol>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="reveal mx-auto max-w-3xl space-y-3 text-center">
+      <p className="text-sm font-medium text-muted-foreground">{eyebrow}</p>
+      <h2 className="text-2xl font-bold md:text-4xl">{title}</h2>
     </div>
   );
 }
@@ -101,55 +75,58 @@ export default function Home() {
   return (
     <main className="flex-1">
       {/* 1. 히어로 */}
-      <section className="px-4 py-16 md:py-28">
-        <div className="mx-auto max-w-4xl space-y-8">
-          <div className="flex flex-wrap items-center gap-3">
+      <section className="page-glow px-4 pt-6 pb-16 md:pb-28">
+        <div className="mx-auto max-w-5xl">
+          <div className="flex items-center justify-between">
             <span className="text-base font-bold">GEO 스나이퍼</span>
-            <Badge variant="outline">지금 검증 중인 아이디어예요</Badge>
           </div>
-          <h1 className="text-4xl leading-tight font-bold tracking-tight md:text-6xl">
-            AI 추천 목록에
-            <br />내 브랜드 자리 만들기
-          </h1>
-          <div className="max-w-2xl space-y-2 text-lg leading-relaxed text-muted-foreground">
-            <p>
-              니치 홈프레이그런스 브랜드를 위한 GEO 운영 도구. 기준 브랜드가 왜
-              추천되는지 찾아, 이번 주 할 일로 바꿔 드려요.
-            </p>
-            <p>브랜드 운영을 에이전트로 가볍게.</p>
-          </div>
-          <StartButton />
-          <div className="flex flex-wrap gap-2 pt-2">
-            {keywords.map((k) => (
-              <Badge key={k} variant="secondary">
-                {k}
-              </Badge>
-            ))}
+          <div className="mx-auto max-w-3xl space-y-8 pt-16 text-center md:pt-24">
+            <Badge variant="outline" className="gap-1.5 rounded-full border-primary/50 px-3 py-1">
+              <CircleDot className="size-3 text-primary" />
+              검증 중인 서비스 · 1인 창업자용 GEO
+            </Badge>
+            <h1 className="text-4xl leading-tight font-bold tracking-tight md:text-6xl">
+              브랜드명만 넣으면
+              <br />
+              <span className="text-brand">AI 검색 노출</span>을 진단해요
+            </h1>
+            <div className="mx-auto max-w-2xl space-y-2 text-base leading-relaxed text-muted-foreground md:text-lg">
+              <p>
+                ChatGPT · Gemini 가 우리 브랜드를 얼마나 자주 말하는지, 그리고 이번 주에 할 일 3가지를 한 장으로
+                보여 드려요.
+              </p>
+              <p>마케터 없이 혼자 브랜드를 키우는 분을 위해 만들고 있어요.</p>
+            </div>
+            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <ExampleReportButton />
+              <StartButton />
+            </div>
+            <div className="flex flex-wrap justify-center gap-2">
+              {keywords.map((k) => (
+                <Badge key={k} variant="secondary" className="rounded-full">
+                  {k}
+                </Badge>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      <Separator />
-
       {/* 2. 문제 */}
       <section className="px-4 py-16 md:py-28">
         <div className="mx-auto max-w-5xl space-y-10">
-          <div className="reveal max-w-3xl space-y-4">
-            <SectionLabel>문제</SectionLabel>
-            <h2 className="text-2xl font-bold md:text-4xl">
-              늘 같은 브랜드만 추천돼요
-            </h2>
-            <p className="text-lg leading-relaxed text-muted-foreground">
-              &ldquo;집들이 선물 디퓨저 추천&rdquo;을 AI 에 물으면 늘 같은
-              브랜드들이 나와요. 갓 런칭한 브랜드는 아무리 찾아봐도 이름이
-              없어요. 그 브랜드들이 왜 추천되는지, 나는 어디서부터 손대야 하는지
-              알기 어려워요.
-            </p>
-          </div>
+          <SectionHead eyebrow="문제" title="AI 가 추천하는 브랜드, 왜 늘 같을까요?" />
+          <p className="reveal mx-auto max-w-2xl text-center text-base leading-relaxed text-muted-foreground md:text-lg">
+            &ldquo;집들이 선물 디퓨저 추천&rdquo;처럼 AI 에 물으면 늘 같은 브랜드가 나와요. 갓 시작한 브랜드는
+            이름이 없고, 어디서부터 손대야 할지 알기 어려워요.
+          </p>
           <div className="grid gap-4 md:grid-cols-3">
-            {pains.map((p) => (
-              <Card key={p} className="reveal">
-                <CardContent className="text-base leading-relaxed">{p}</CardContent>
+            {pains.map((p, i) => (
+              <Card key={p} className="reveal rounded-2xl">
+                <CardHeader className="gap-3">
+                  <CardDescription>불편 {i + 1}</CardDescription>
+                  <CardTitle className="text-lg leading-snug">{p}</CardTitle>
+                </CardHeader>
               </Card>
             ))}
           </div>
@@ -161,27 +138,44 @@ export default function Home() {
       {/* 3. 작동 방식 */}
       <section className="px-4 py-16 md:py-28">
         <div className="mx-auto max-w-5xl space-y-10">
-          <div className="reveal max-w-3xl space-y-4">
-            <SectionLabel>작동 방식</SectionLabel>
-            <h2 className="text-2xl font-bold md:text-4xl">세 단계면 돼요</h2>
+          <SectionHead eyebrow="작동 방식" title="세 단계면 돼요" />
+          <div className="grid gap-4 md:grid-cols-3">
+            {steps.map((s, i) => (
+              <Card key={s.label} className={`reveal rounded-2xl ${i === 2 ? "card-glow ring-primary/40" : ""}`}>
+                <CardHeader className="gap-4">
+                  <Badge variant="secondary" className="w-fit gap-1.5 rounded-full">
+                    <CircleDot className="size-3 text-primary" />
+                    {i + 1} · {s.label}
+                  </Badge>
+                  <CardTitle className="text-lg leading-snug">{s.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {i === 1 && (
+                    <div className="flex flex-wrap gap-2 pb-1">
+                      <Badge variant="outline" className="gap-1 rounded-full">
+                        <Crosshair className="size-3" /> 공략형
+                      </Badge>
+                      <Badge variant="outline" className="gap-1 rounded-full">
+                        <Mountain className="size-3" /> 장기형
+                      </Badge>
+                    </div>
+                  )}
+                  {s.checks.map((c) => (
+                    <p key={c} className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <CircleCheck className="mt-0.5 size-4 shrink-0 text-primary" />
+                      {c}
+                    </p>
+                  ))}
+                </CardContent>
+              </Card>
+            ))}
           </div>
-          <div className="grid gap-10 md:grid-cols-2 md:gap-12">
-            <div className="space-y-4">
-              {steps.map((s, i) => (
-                <Card key={s.title} className="reveal">
-                  <CardHeader>
-                    <Badge className="mb-2">{i + 1}단계</Badge>
-                    <CardTitle className="text-lg">{s.title}</CardTitle>
-                    <CardDescription className="text-base leading-relaxed">
-                      {s.body}
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              ))}
-            </div>
-            <div className="reveal">
-              <ExampleScreen />
-            </div>
+          <div className="reveal flex justify-center">
+            <Button asChild variant="ghost">
+              <Link href="/app/reports/example">
+                리포트가 어떻게 나오는지 예시로 보기 <ArrowRight />
+              </Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -191,27 +185,21 @@ export default function Home() {
       {/* 4. 이래서 쓰게 돼요 */}
       <section className="px-4 py-16 md:py-28">
         <div className="mx-auto max-w-5xl space-y-10">
-          <div className="reveal max-w-3xl space-y-4">
-            <SectionLabel>이래서 쓰게 돼요</SectionLabel>
-            <h2 className="text-2xl font-bold md:text-4xl">
-              처음엔 놀라고, 계속 열게 돼요
-            </h2>
-          </div>
+          <SectionHead eyebrow="이래서 쓰게 돼요" title="처음엔 놀라고, 계속 분명해져요" />
           <div className="grid gap-4 md:grid-cols-2">
-            <Card className="reveal">
-              <CardHeader>
+            <Card className="reveal rounded-2xl">
+              <CardHeader className="gap-3">
                 <CardDescription>처음 써 보면</CardDescription>
                 <CardTitle className="text-xl leading-snug">
-                  질문 10개를 넣자마자 &ldquo;이번 주 할 일 3가지&rdquo;가 나와요
+                  몇 분 안에 &ldquo;AI 가 우리를 얼마나 말하는지&rdquo;와 &ldquo;이번 주 할 일 3개&rdquo;가 나와요
                 </CardTitle>
               </CardHeader>
             </Card>
-            <Card className="reveal">
-              <CardHeader>
+            <Card className="reveal rounded-2xl">
+              <CardHeader className="gap-3">
                 <CardDescription>계속 쓰게 되는 이유</CardDescription>
                 <CardTitle className="text-xl leading-snug">
-                  목표로 둔 질문에 내 브랜드가 오를 때까지, 결과가 나올 때마다
-                  다음에 고칠 점을 받아요
+                  목표로 둔 질문에 우리 브랜드가 오를 때까지, 무엇을 고칠지가 분명해져요
                 </CardTitle>
               </CardHeader>
             </Card>
@@ -223,78 +211,59 @@ export default function Home() {
 
       {/* 5. 다른 점 */}
       <section className="px-4 py-16 md:py-28">
-        <div className="reveal mx-auto max-w-3xl space-y-8">
-          <div className="space-y-4">
-            <SectionLabel>다른 점</SectionLabel>
-            <h2 className="text-2xl font-bold md:text-4xl">
-              &ldquo;나오나&rdquo;가 아니라 &ldquo;왜 나오나&rdquo;
-            </h2>
-          </div>
-          <div className="space-y-4 text-lg leading-relaxed">
-            <p>
-              범용 GEO 툴은 &ldquo;내 브랜드가 나오나&rdquo;를 보여주고, GEO
-              스나이퍼는 &ldquo;기준 브랜드는 왜 나오나&rdquo;를 보여줘요.
-            </p>
-            <Separator />
-            <p>
-              무료 GPT 에 직접 물으면 한 번의 답이지만, GEO 스나이퍼는 세 AI 의
-              답과 출처를 같은 기준으로 모아 할 일로 정리해요.
-            </p>
-          </div>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                니치 홈프레이그런스 브랜드라서 필요한 것
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-base leading-relaxed text-muted-foreground">
-                {brandNeeds.map((n) => (
-                  <li key={n}>— {n}</li>
-                ))}
-              </ul>
+        <div className="mx-auto max-w-3xl space-y-10">
+          <SectionHead
+            eyebrow="다른 점"
+            title={
+              <>
+                &ldquo;나오나&rdquo;가 아니라 <span className="text-brand">&ldquo;왜 나오나&rdquo;</span>
+              </>
+            }
+          />
+          <Card className="reveal rounded-2xl">
+            <CardContent className="divide-y divide-border">
+              {differences.map((d, i) => (
+                <p key={i} className="py-4 text-base leading-relaxed text-muted-foreground first:pt-0 last:pb-0">
+                  {d}
+                </p>
+              ))}
             </CardContent>
           </Card>
         </div>
       </section>
 
-      <Separator />
-
-      {/* 6. 가격 · 시작 방법 — SITE.md 에서 "준비 중" 이라 뺀다 */}
-
-      {/* 7. 시작하기 */}
-      <section className="px-4 py-16 md:py-28">
-        <div className="reveal mx-auto max-w-3xl space-y-6 text-center">
+      {/* 6. 시작하기 */}
+      <section className="px-4 pb-16 md:pb-28">
+        <div className="card-glow reveal mx-auto max-w-5xl space-y-6 rounded-2xl border px-6 py-12 text-center md:py-16">
           <h2 className="text-2xl font-bold md:text-4xl">
-            AI 추천 목록, 이제 이유부터 봐요
+            우리 브랜드는 <span className="text-brand">AI 에서 몇 번</span> 불릴까요?
           </h2>
-          <p className="text-lg text-muted-foreground">
-            아직 준비 중이에요. 조금만 기다려 주세요.
-          </p>
-          <StartButton />
+          <div className="flex justify-center">
+            <ExampleReportButton />
+          </div>
+          <p className="text-sm text-muted-foreground">무료 진단 1회는 곧 열려요.</p>
         </div>
       </section>
 
       <Separator />
 
-      {/* 8. 만든 사람 */}
-      <section className="px-4 py-16 md:py-28">
+      {/* 7. 만든 사람 */}
+      <section className="px-4 py-16 md:py-20">
         <div className="reveal mx-auto flex max-w-3xl items-start gap-4">
           <Avatar className="size-12">
             <AvatarFallback className="font-semibold">W</AvatarFallback>
           </Avatar>
           <div className="space-y-1">
-            <SectionLabel>만든 사람</SectionLabel>
+            <p className="text-sm font-medium text-muted-foreground">만든 사람</p>
             <p className="text-lg font-bold">The witch</p>
             <p className="text-base leading-relaxed text-muted-foreground">
-              니치 홈프레이그런스 브랜드를 직접 준비하며, 내게 필요한 GEO 도구를
-              만들고 있어요.
+              니치 홈프레이그런스 브랜드를 직접 준비하며, 내게 필요했던 GEO 도구를 모두가 쓸 수 있게 만들고 있어요.
             </p>
           </div>
         </div>
       </section>
 
-      {/* 9. 푸터 */}
+      {/* 8. 푸터 */}
       <footer className="border-t px-4 py-10">
         <div className="mx-auto max-w-5xl space-y-1 text-sm text-muted-foreground">
           <p className="font-semibold text-foreground">GEO 스나이퍼 · 2026</p>
