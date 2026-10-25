@@ -27,6 +27,7 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -48,73 +49,110 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* DESIGN.md 2. 디자인 토큰 — 라이트(:root) / 다크(.dark, 기본 화면) */
 :root {
-  --background: #FFFFFF;
-  --foreground: #111111;
+  --background: #FBFAFD;
+  --foreground: #15121C;
   --card: #FFFFFF;
-  --card-foreground: #111111;
+  --card-foreground: #15121C;
   --popover: #FFFFFF;
-  --popover-foreground: #111111;
-  --primary: #111111;
+  --popover-foreground: #15121C;
+  --primary: #6D28D9;
   --primary-foreground: #FFFFFF;
-  --secondary: #F4F4F5;
-  --secondary-foreground: #111111;
-  --muted: #F4F4F5;
-  --muted-foreground: #6B6B6B;
-  --accent: #F4F4F5;
-  --accent-foreground: #111111;
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: #E5E5E5;
-  --input: #E5E5E5;
-  --ring: #111111;
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.25rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --secondary: #F1EEF7;
+  --secondary-foreground: #15121C;
+  --muted: #F1EEF7;
+  --muted-foreground: #5E5870;
+  --accent: #EDE7FB;
+  --accent-foreground: #15121C;
+  --destructive: #DC2626;
+  --destructive-foreground: #FFFFFF;
+  --border: #E4E0EC;
+  --input: #E4E0EC;
+  --ring: #7C3AED;
+  --chart-1: #4F5BEA;
+  --chart-2: #7C3AED;
+  --chart-3: #C084FC;
+  --chart-4: #FDBA74;
+  --chart-5: #C2410C;
+  --radius: 1rem;
+  --brand-from: #4F5BEA;
+  --brand-via: #7C3AED;
+  --brand-to: #C2410C;
+  --brand-text-from: #4F5BEA;
+  --brand-text-via: #7C3AED;
+  --brand-text-to: #C2410C;
+  --glow: #7C3AED;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #15121C;
+  --sidebar-primary: #6D28D9;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #EDE7FB;
+  --sidebar-accent-foreground: #15121C;
+  --sidebar-border: #E4E0EC;
+  --sidebar-ring: #7C3AED;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #0B0A10;
+  --foreground: #F4F2F8;
+  --card: #16131F;
+  --card-foreground: #F4F2F8;
+  --popover: #1A1724;
+  --popover-foreground: #F4F2F8;
+  --primary: #7C3AED;
+  --primary-foreground: #FFFFFF;
+  --secondary: #221E2E;
+  --secondary-foreground: #ECE9F3;
+  --muted: #1C1927;
+  --muted-foreground: #A6A0B8;
+  --accent: #2A2440;
+  --accent-foreground: #F4F2F8;
+  --destructive: #F0526B;
+  --destructive-foreground: #FFFFFF;
+  --border: #2A2636;
+  --input: #2E2A3A;
+  --ring: #A78BFA;
+  --chart-1: #7C8CFF;
+  --chart-2: #A78BFA;
+  --chart-3: #C084FC;
+  --chart-4: #FDBA74;
+  --chart-5: #F97316;
+  --brand-from: #4F5BEA;
+  --brand-via: #7C3AED;
+  --brand-to: #C2410C;
+  --brand-text-from: #7C8CFF;
+  --brand-text-via: #C084FC;
+  --brand-text-to: #FDBA74;
+  --glow: #7C3AED;
+  --sidebar: #16131F;
+  --sidebar-foreground: #F4F2F8;
+  --sidebar-primary: #7C3AED;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #2A2440;
+  --sidebar-accent-foreground: #F4F2F8;
+  --sidebar-border: #2A2636;
+  --sidebar-ring: #A78BFA;
+}
+
+/* 그라데이션 · 빛 (DESIGN.md 4. — 화면당 꼭 필요한 곳에만) */
+@layer components {
+  .bg-brand {
+    background-image: linear-gradient(90deg, var(--brand-from), var(--brand-via), var(--brand-to));
+    color: var(--primary-foreground);
+  }
+  .text-brand {
+    background-image: linear-gradient(90deg, var(--brand-text-from), var(--brand-text-via), var(--brand-text-to));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .page-glow {
+    background-image: radial-gradient(60% 40% at 50% 0%, color-mix(in oklab, var(--glow) 28%, transparent), transparent 70%);
+  }
+  .card-glow {
+    background-image: radial-gradient(80% 60% at 50% 0%, color-mix(in oklab, var(--glow) 30%, transparent), transparent 70%);
+  }
 }
 
 @layer base {

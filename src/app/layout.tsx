@@ -46,14 +46,15 @@ const jsonLd = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ko" className={`${pretendard.variable} h-full antialiased`}>
+    // DESIGN.md: 기본 화면은 다크 (랜딩 · 제품 화면 공통, D-13)
+    <html lang="ko" className={`${pretendard.variable} dark h-full antialiased`}>
       <body className="min-h-full flex flex-col font-sans">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         {children}
-        <Toaster theme="light" />
+        <Toaster theme="dark" />
       </body>
     </html>
   );
