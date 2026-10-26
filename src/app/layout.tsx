@@ -56,7 +56,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         {children}
-        <Toaster theme="dark" />
+        {/* 위쪽에 띄워 질문 화면 아래 고정 바([진단 시작])를 가리지 않게 */}
+        <Toaster theme="dark" position="top-center" />
       </body>
     </html>
   );

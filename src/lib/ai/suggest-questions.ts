@@ -1,5 +1,5 @@
 import "server-only";
-import type { Candidate, SuggestInput, SuggestResult } from "@/lib/questions";
+import type { Candidate, ReplaceRequest, SuggestInput, SuggestResult } from "@/lib/questions";
 
 // ★ 실제 키로 바꿀 지점은 이 파일 하나다.
 // ANTHROPIC_API_KEY 가 없으면 연습용 예시(mock)를 돌려준다.
@@ -12,6 +12,45 @@ export async function suggestQuestions(input: SuggestInput): Promise<SuggestResu
   }
   // 실제 연결 전까지는 키가 있어도 예시로 돌려준다 (상한 없이 실제 비용이 나가지 않게).
   return { isMock: true, candidates: mockCandidates(input) };
+}
+
+// 질문 하나만 다시 만들기 (T-08). 같은 종류로, 화면에 있는 질문과 겹치지 않게.
+export async function replaceQuestion(input: SuggestInput, req: ReplaceRequest): Promise<SuggestResult> {
+  const exclude = new Set(req.exclude.map((t) => t.trim()));
+  const pool = [...mockCandidates(input), ...mockAlternatives(input)].filter((c) => c.strategy === req.strategy);
+  const pick = pool.find((c) => !exclude.has(c.text));
+  if (!pick) return { isMock: true, candidates: [] };
+  return { isMock: true, candidates: [{ ...pick, id: `${req.strategy}-${Date.now().toString(36)}` }] };
+}
+
+// 다시 만들기용 예비 질문 (연습용 예시)
+function mockAlternatives({ category }: SuggestInput): Candidate[] {
+  const c = category.trim();
+  const home = /향|프레이그런스|디퓨저|캔들|퍼퓸|사쉐/.test(c);
+  const quick: [string, string][] = home
+    ? [
+        ["5만원 이하 집들이 선물 세트 추천해 줘", "세트 · 가격 조건이 붙으면 단품 위주 대형 브랜드가 덜 나와요"],
+        ["향이 오래가는 차량용 디퓨저 추천해 줘", "쓰는 장소가 다른 질문은 경쟁 브랜드 구성이 달라요"],
+        ["비건 · 천연 원료 디퓨저 브랜드 있어?", "원료 조건은 상세페이지 정보로 답이 갈려요"],
+      ]
+    : [
+        [`비건 ${c} 브랜드 추천해 줘`, "원료 · 가치 조건은 상세페이지 정보로 답이 갈려요"],
+        [`10만원 이하 ${c} 선물 세트 추천해 줘`, "세트 · 가격 조건이 붙으면 대형 브랜드가 덜 나와요"],
+        [`20대가 좋아하는 ${c} 브랜드 알려 줘`, "대상을 좁힌 질문은 비교 대상이 적어요"],
+      ];
+  const long: [string, string][] = home
+    ? [
+        ["디퓨저 브랜드 어디가 좋아?", "가장 넓은 질문 — 오래 쌓여야 들어갈 수 있어요"],
+        ["향 좋은 캔들 브랜드 추천해 줘", "인접 제품군 대표 질문이라 길게 보고 잡아야 해요"],
+      ]
+    : [
+        [`요즘 인기 있는 ${c} 브랜드 뭐야?`, "가장 넓은 질문 — 오래 쌓여야 들어갈 수 있어요"],
+        [`${c} 브랜드 어디가 좋아?`, "대표 질문이라 길게 보고 잡아야 해요"],
+      ];
+  return [
+    ...quick.map(([text, rationale], i) => ({ id: `qa${i}`, strategy: "quick_win" as const, text, rationale })),
+    ...long.map(([text, rationale], i) => ({ id: `la${i}`, strategy: "long_term" as const, text, rationale })),
+  ];
 }
 
 // 카테고리 · 기준 브랜드로 그럴듯한 한국어 질문을 만드는 연습용 예시. 실제 노출 가능성 판단이 아니다.
