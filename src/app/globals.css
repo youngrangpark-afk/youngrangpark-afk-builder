@@ -49,26 +49,27 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* DESIGN.md 2. 디자인 토큰 — 라이트(:root) / 다크(.dark, 기본 화면) */
+/* DESIGN.md 2. 디자인 토큰 — 라이트(:root, 기본 화면 · D-14) / 다크(.dark, 보관) */
+/* 흰 배경 + 순검정이 아닌 부드러운 글자색(대비 16.6:1)으로 눈 피로를 줄인다 */
 :root {
-  --background: #FBFAFD;
-  --foreground: #15121C;
+  --background: #FFFFFF;
+  --foreground: #1F1D26;
   --card: #FFFFFF;
-  --card-foreground: #15121C;
+  --card-foreground: #1F1D26;
   --popover: #FFFFFF;
-  --popover-foreground: #15121C;
+  --popover-foreground: #1F1D26;
   --primary: #6D28D9;
   --primary-foreground: #FFFFFF;
-  --secondary: #F1EEF7;
-  --secondary-foreground: #15121C;
-  --muted: #F1EEF7;
-  --muted-foreground: #5E5870;
-  --accent: #EDE7FB;
-  --accent-foreground: #15121C;
+  --secondary: #F6F5F9;
+  --secondary-foreground: #1F1D26;
+  --muted: #F6F5F9;
+  --muted-foreground: #5F5A6B;
+  --accent: #F1ECFB;
+  --accent-foreground: #1F1D26;
   --destructive: #DC2626;
   --destructive-foreground: #FFFFFF;
-  --border: #E4E0EC;
-  --input: #E4E0EC;
+  --border: #ECEAF1;
+  --input: #E4E1EA;
   --ring: #7C3AED;
   --chart-1: #4F5BEA;
   --chart-2: #7C3AED;
@@ -82,7 +83,7 @@
   --brand-text-from: #4F5BEA;
   --brand-text-via: #7C3AED;
   --brand-text-to: #C2410C;
-  --glow: #7C3AED;
+  --glow: #C4B5FD;
   --sidebar: #FFFFFF;
   --sidebar-foreground: #15121C;
   --sidebar-primary: #6D28D9;

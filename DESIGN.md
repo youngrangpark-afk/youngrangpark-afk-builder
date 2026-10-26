@@ -19,30 +19,34 @@
 3. 큰 숫자와 짧은 문장, 둥근 카드로 **리포트를 한 장씩 넘겨 보듯** 읽히게.
 
 ## 2. 디자인 토큰 (globals.css)
-기본 화면은 **다크**다 (`<html class="dark">`). 라이트 값은 나중에 밝은 화면이 필요할 때를 위해 맞춰 둔다.
+기본 화면은 **흰 배경 라이트**다 (2026-10-26 변경, D-14 — `<html>` 에 dark 클래스 없음). 다크 값은 보관만 한다.
+눈 피로를 줄이려고 배경은 흰색, 글자는 순검정(대비 21:1) 대신 부드러운 검정(#1F1D26, 16.6:1), 면은 아주 옅은 회색으로 쓴다.
 
-| 토큰 | 다크 (기본) | 라이트 |
+| 토큰 | 라이트 (기본) | 다크 (보관) |
 |---|---|---|
-| background | #0B0A10 | #FBFAFD |
-| foreground | #F4F2F8 | #15121C |
-| card | #16131F | #FFFFFF |
-| card-foreground | #F4F2F8 | #15121C |
-| popover | #1A1724 | #FFFFFF |
-| popover-foreground | #F4F2F8 | #15121C |
-| primary | #7C3AED | #6D28D9 |
+| background | #FFFFFF | #0B0A10 |
+| foreground | #1F1D26 | #F4F2F8 |
+| card | #FFFFFF | #16131F |
+| card-foreground | #1F1D26 | #F4F2F8 |
+| popover | #FFFFFF | #1A1724 |
+| popover-foreground | #1F1D26 | #F4F2F8 |
+| primary | #6D28D9 | #7C3AED |
 | primary-foreground | #FFFFFF | #FFFFFF |
-| secondary | #221E2E | #F1EEF7 |
-| secondary-foreground | #ECE9F3 | #15121C |
-| muted | #1C1927 | #F1EEF7 |
-| muted-foreground | #A6A0B8 | #5E5870 |
-| accent | #2A2440 | #EDE7FB |
-| accent-foreground | #F4F2F8 | #15121C |
-| destructive | #F0526B | #DC2626 |
+| secondary | #F6F5F9 | #221E2E |
+| secondary-foreground | #1F1D26 | #ECE9F3 |
+| muted | #F6F5F9 | #1C1927 |
+| muted-foreground | #5F5A6B | #A6A0B8 |
+| accent | #F1ECFB | #2A2440 |
+| accent-foreground | #1F1D26 | #F4F2F8 |
+| destructive | #DC2626 | #F0526B |
 | destructive-foreground | #FFFFFF | #FFFFFF |
-| border | #2A2636 | #E4E0EC |
-| input | #2E2A3A | #E4E0EC |
-| ring | #A78BFA | #7C3AED |
+| border | #ECEAF1 | #2A2636 |
+| input | #E4E1EA | #2E2A3A |
+| ring | #7C3AED | #A78BFA |
 | radius | 1rem | 1rem |
+| glow (빛 번짐) | #C4B5FD (옅게) | #7C3AED |
+
+색 대비 (라이트, 계산값): 본문 16.6:1 · 보조 글자 6.6:1 · 보라 버튼 흰 글자 7.1:1 · 그라데이션 버튼 양 끝 흰 글자 5.2:1 · 그라데이션 글자 5.2:1 이상 · 오류 글자 4.8:1 — 모두 4.5:1 이상.
 
 추가 토큰 (그라데이션 · 빛):
 | 토큰 | 값 | 쓰는 곳 |

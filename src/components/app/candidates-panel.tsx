@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Crosshair, Info, Loader2, Mountain, PenLine, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { CircleCheck, Crosshair, Info, Loader2, Mountain, PenLine, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { LoginDialog } from "@/components/app/login-dialog";
 import type { BrandDraft } from "@/lib/draft";
+import { readPicks as readStored, writePicks as writeStored, type Picks } from "@/lib/picks";
 import {
   isValidQuestionText,
   MAX_CUSTOM,
@@ -20,32 +22,8 @@ import {
   type SuggestInput,
   type SuggestResult,
 } from "@/lib/questions";
-
-const STORE = "geo-sniper:candidates";
-
-// 브라우저에 저장하는 모양 (D-07): 후보 · 고친 글 · 고른 순서
-type Picks = { isMock: boolean; candidates: Candidate[]; selected: string[] };
-type Stored = { key: string } & Picks;
-
-function readStored(key: string): Picks | null {
-  try {
-    const s = JSON.parse(localStorage.getItem(STORE) ?? "null") as Stored | null;
-    if (!s || s.key !== key || !Array.isArray(s.candidates)) return null;
-    const ids = new Set(s.candidates.map((c) => c.id));
-    const selected = Array.isArray(s.selected) ? s.selected.filter((id) => ids.has(id)).slice(0, PICK_COUNT) : [];
-    return { isMock: !!s.isMock, candidates: s.candidates, selected };
-  } catch {
-    return null;
-  }
-}
-
-function writeStored(key: string, picks: Picks) {
-  try {
-    localStorage.setItem(STORE, JSON.stringify({ key, ...picks }));
-  } catch {
-    // 저장이 막혀도 화면에서는 계속 고를 수 있다
-  }
-}
+import { saveToAccount } from "@/lib/save-to-account";
+import { getBrowserSupabase } from "@/lib/supabase/browser";
 
 async function postSuggest(body: object): Promise<SuggestResult> {
   const res = await fetch("/api/questions/suggest", {
@@ -65,6 +43,47 @@ export function CandidatesPanel({ draft }: { draft: BrandDraft }) {
   const [picks, setPicks] = useState<Picks | null>(() => readStored(key));
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savedTo, setSavedTo] = useState<string | null>(null); // 저장한 계정 이메일
+
+  // 로그인한 뒤 브라우저의 브랜드 · 질문을 내 계정으로 옮긴다 (T-09). 진단 실행 자체는 T-10 · T-11.
+  async function saveForDiagnosis() {
+    const current = picks;
+    if (!current || current.selected.length !== PICK_COUNT) return;
+    setSaving(true);
+    try {
+      const { data } = await getBrowserSupabase().auth.getUser();
+      if (!data.user) {
+        setLoginOpen(true);
+        return;
+      }
+      await saveToAccount(draft, current);
+      setSavedTo(data.user.email ?? "내 계정");
+      toast("로그인됐어요. 브랜드와 질문 5개를 내 계정에 저장했어요. 진단 실행은 곧 열려요.");
+    } catch (e) {
+      toast((e as Error).message || "저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // 메일 링크(/auth/callback)에서 돌아오면 바로 저장한다 (D-05: 돌아오면 이어서 진행)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const login = params.get("login");
+    if (!login) return;
+    params.delete("login");
+    const rest = params.toString();
+    window.history.replaceState(null, "", window.location.pathname + (rest ? `?${rest}` : ""));
+    if (login === "failed") {
+      toast("로그인 링크가 만료됐거나 이미 쓰였어요. 다시 받아 주세요.");
+      return;
+    }
+    void Promise.resolve().then(saveForDiagnosis);
+    // 처음 한 번만 (저장된 고른 질문은 첫 렌더 때 이미 읽혀 있다)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (picks) return;
@@ -244,6 +263,22 @@ export function CandidatesPanel({ draft }: { draft: BrandDraft }) {
         {customs.length < MAX_CUSTOM && <CustomForm onAdd={addCustom} />}
       </section>
 
+      {savedTo && (
+        <Card className="card-glow rounded-2xl ring-primary/40">
+          <CardHeader className="gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <CircleCheck className="size-5 text-primary" /> 진단 준비 완료
+            </CardTitle>
+            <CardDescription className="leading-relaxed">
+              <strong className="text-foreground">{savedTo}</strong> 계정에 브랜드와 질문 5개를 저장했어요. 진단 실행은 곧
+              열려요. 질문을 바꾸면 [진단 시작]을 다시 눌러 저장해 주세요.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+
+      <LoginDialog open={loginOpen} onOpenChange={setLoginOpen} />
+
       {/* 아래 고정 바 — 정확히 5개일 때만 진단 시작 (D-10) */}
       <div className="fixed inset-x-0 bottom-0 z-10 border-t bg-background/90 px-4 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-xl items-center justify-between gap-3">
@@ -257,9 +292,9 @@ export function CandidatesPanel({ draft }: { draft: BrandDraft }) {
           </div>
           <Button
             size="lg"
-            disabled={count !== PICK_COUNT}
+            disabled={count !== PICK_COUNT || saving}
             className="bg-brand h-11 shrink-0 px-5 hover:opacity-90 disabled:bg-none disabled:bg-muted disabled:text-muted-foreground"
-            onClick={() => toast("로그인과 진단 시작은 다음 단계(T-09)에서 열려요. 고른 질문은 저장해 뒀어요.")}
+            onClick={() => void saveForDiagnosis()}
           >
             진단 시작
           </Button>

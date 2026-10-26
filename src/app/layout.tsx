@@ -48,8 +48,8 @@ const jsonLd = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    // DESIGN.md: 기본 화면은 다크 (랜딩 · 제품 화면 공통, D-13)
-    <html lang="ko" className={`${pretendard.variable} dark h-full antialiased`}>
+    // DESIGN.md: 기본 화면은 흰 배경 라이트 (랜딩 · 제품 화면 공통, D-14)
+    <html lang="ko" className={`${pretendard.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-sans">
         <script
           type="application/ld+json"
@@ -57,7 +57,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
         {children}
         {/* 위쪽에 띄워 질문 화면 아래 고정 바([진단 시작])를 가리지 않게 */}
-        <Toaster theme="dark" position="top-center" />
+        <Toaster theme="light" position="top-center" />
       </body>
     </html>
   );
