@@ -120,7 +120,7 @@ function BrandForm({ initial }: { initial: BrandDraft | null }) {
             {errors.site ? (
               <p className="text-sm text-destructive">{errors.site}</p>
             ) : (
-              <p className="text-xs text-muted-foreground">같은 브랜드로 무료 진단이 겹치지 않게 하는 데만 써요.</p>
+              <p className="text-xs text-muted-foreground">리포트에서 내 브랜드 사이트 출처를 구분하는 데 써요.</p>
             )}
           </div>
 

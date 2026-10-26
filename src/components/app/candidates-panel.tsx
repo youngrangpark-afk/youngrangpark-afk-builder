@@ -77,7 +77,7 @@ export function CandidatesPanel({ draft }: { draft: BrandDraft }) {
       const brandId = await saveToAccount(draft, current);
       setSavedTo(data.user.email ?? "내 계정");
 
-      // 진단 시작 (T-10 · T-11): 무료 1회 · 하루 상한은 서버가 확인한다
+      // 진단 시작 (T-10 · T-11): 계정당 20회 · 전체 하루 50회는 서버가 확인한다 (D-22)
       const res = await fetch("/api/diagnosis/start", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -90,7 +90,7 @@ export function CandidatesPanel({ draft }: { draft: BrandDraft }) {
         return;
       }
       if (res.status === 409 && result.runId) {
-        toast(result.error ?? "무료 진단은 1회예요.");
+        toast(result.error ?? "지난 진단을 열어 드릴게요.");
         router.push(`/app/reports/${result.runId}`);
         return;
       }

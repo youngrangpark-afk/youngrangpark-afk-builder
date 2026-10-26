@@ -2,10 +2,11 @@ import { enginesAreLive } from "@/lib/diagnosis/engine";
 import { getAdminSupabase } from "@/lib/supabase/admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 
-// 진단 시작 (T-10 · T-11): 로그인 확인 → 내 브랜드 · 고른 질문 5개 확인 → 무료 1회 · 하루 상한 → 진단과 작업 칸 만들기
+// 진단 시작 (T-10 · T-11): 로그인 확인 → 내 브랜드 · 고른 질문 5개 확인 → 계정당 20회 · 전체 하루 50회 → 진단과 작업 칸 만들기
 const ENGINES = ["openai", "gemini"] as const;
 const REPEATS = 3;
-const DAILY_LIMIT = Number(process.env.DIAGNOSIS_DAILY_LIMIT ?? 20);
+const DAILY_LIMIT = Number(process.env.DIAGNOSIS_DAILY_LIMIT ?? 50);
+const PER_USER_LIMIT = Number(process.env.DIAGNOSIS_PER_USER_LIMIT ?? 20);
 
 export async function POST(request: Request) {
   const supabase = await getServerSupabase();
@@ -36,25 +37,13 @@ export async function POST(request: Request) {
   const admin = getAdminSupabase();
   const brandKey = brand.site_domain || brand.name.toLowerCase().replace(/\s+/g, "");
 
-  // 무료 진단 1회 (계정당 · 브랜드당) — 이미 있으면 그 진단으로 안내
-  // (브랜드 이름에 쉼표 · 괄호가 있어도 안전하게 두 번 나눠 묻는다)
-  const { data: mineRun } = await admin
+  // 계정당 진단 횟수 (D-22: 무료 1회 → 계정당 20회)
+  const { count: mineCount } = await admin
     .from("diagnosis_runs")
-    .select("id")
-    .eq("kind", "free")
-    .eq("user_id", auth.user.id)
-    .limit(1);
-  if (mineRun?.length) {
-    return Response.json({ error: "무료 진단은 1회예요. 지난 진단을 열어 드릴게요.", runId: mineRun[0].id }, { status: 409 });
-  }
-  const { data: brandRun } = await admin
-    .from("diagnosis_runs")
-    .select("id")
-    .eq("kind", "free")
-    .eq("brand_key", brandKey)
-    .limit(1);
-  if (brandRun?.length) {
-    return Response.json({ error: "이 브랜드는 이미 무료 진단을 받았어요.", runId: null }, { status: 409 });
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", auth.user.id);
+  if ((mineCount ?? 0) >= PER_USER_LIMIT) {
+    return Response.json({ error: `한 계정은 진단을 ${PER_USER_LIMIT}번까지 할 수 있어요.` }, { status: 429 });
   }
 
   // 하루 상한 (서비스 전체)
@@ -82,10 +71,6 @@ export async function POST(request: Request) {
     .select("id")
     .single();
   if (runError || !run) {
-    // 동시에 두 번 누른 경우 등 — 무료 1회 규칙(DB 제약)이 막았다
-    if (runError?.code === "23505") {
-      return Response.json({ error: "무료 진단은 1회예요." }, { status: 409 });
-    }
     return Response.json({ error: "진단을 만들지 못했어요." }, { status: 500 });
   }
 

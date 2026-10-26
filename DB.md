@@ -204,10 +204,10 @@ card_types ── task_cards.card_type      question_templates ── questions.
 - 파일 저장소(Storage)는 쓰지 않는다 (아래 7).
 
 ## 6. 제약 (중복 막기 · 값 범위 · 인덱스)
-- **무료 진단 1회 (함정 2):**
-  - 계정당 1회 — `diagnosis_runs` 에서 `kind='free'` 인 행은 `user_id` 마다 하나만 (부분 유니크 인덱스)
-  - 브랜드당 1회 — `kind='free'` 인 행은 `brand_key`(도메인 또는 정규화한 이름)마다 하나만 → 새 이메일로 같은 브랜드를 다시 진단하지 못한다
-- **하루 상한 (함정 2):** `usage_counters` 에 (day, scope, kind) 유니크. 서버가 호출 전에 1 올리고 상한을 넘으면 거절. 상한 숫자는 환경변수로 (기본 제안: 전체 진단 하루 20회, IP 당 질문 생성 하루 10회)
+- **진단 횟수 제한 (함정 2, 2026-10-26 변경 — D-22):**
+  - ~~계정당 · 브랜드당 무료 1회 (부분 유니크 인덱스)~~ → 인덱스 삭제 (`20261026103353_relax_free_limit.sql`). 같은 브랜드도 여러 번 진단할 수 있다.
+  - **계정당 20회** — 서버가 진단을 만들기 전에 그 계정의 진단 수를 세어 막는다 (`DIAGNOSIS_PER_USER_LIMIT`, 기본 20)
+- **하루 상한 (함정 2):** `usage_counters` 에 (day, scope, kind) 유니크. 서버가 호출 전에 1 올리고 상한을 넘으면 거절. 상한 숫자는 환경변수로 (**전체 진단 하루 50회** `DIAGNOSIS_DAILY_LIMIT`, IP 당 질문 생성 하루 10회는 AI 연결 때)
 - **작업 쪼개기 (함정 1):** `run_items` 에 (run_id, question_id, engine, repeat_no) 유니크, `attempts` 0~3, 처리 순서용 인덱스 (status, created_at)
 - **원문 따로 저장 (함정 3):** `engine_answers` 는 item_id 유니크(한 칸에 답 하나). 집계(`summary`)는 원본 표에서 언제든 다시 계산한다
 - 값 범위: questions.position 1~5 · task_cards.position 1~3 · brands.benchmark_brands 최대 3개 · repeats 1~10 · status / engine / role / source_type 은 정해진 값만
