@@ -8,17 +8,32 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { AppHeader } from "@/components/app/app-header";
+import { ReportView } from "@/components/app/report-view";
 import { PICKS_STORE } from "@/lib/picks";
+import type { ReportData } from "@/lib/report/types";
 
 type ProgressState = { status: string; total: number; done: number; failed: number; isMock: boolean };
 
 const POLL_MS = 2000;
 
-// `/app/reports/[번호]` 진행 화면 (T-11). 열려 있는 동안 서버에 "한 걸음"을 계속 부탁하며 진행률을 보여 준다.
+// 진행 중 · 오류 화면의 바깥 틀 (리포트는 자체 틀을 쓴다)
+function shell(children: React.ReactNode) {
+  return (
+    <main className="page-glow flex-1 pb-16">
+      <AppHeader step="3 / 3 · 진단" />
+      <div className="mx-auto max-w-xl px-4 pt-10 md:pt-16">{children}</div>
+    </main>
+  );
+}
+
+// `/app/reports/[번호]` 진행 화면 (T-11) → 끝나면 리포트 한 장 (T-15 ~ T-17).
+// 열려 있는 동안 서버에 "한 걸음"을 계속 부탁하며 진행률을 보여 준다.
 export function RunProgress() {
   const { id } = useParams<{ id: string }>();
   const [state, setState] = useState<ProgressState | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [report, setReport] = useState<ReportData | null>(null);
 
   // 진단이 시작됐으니 브라우저에 남은 입력 복사본은 지운다 (D-16)
   useEffect(() => {
@@ -45,6 +60,11 @@ export function RunProgress() {
         setError(null);
         setState(data as ProgressState);
         if (data.status === "running" || data.status === "queued") timer = setTimeout(tick, POLL_MS);
+        else if (data.status === "done") {
+          const r = await fetch(`/api/diagnosis/${id}/report`);
+          const rd = await r.json();
+          if (!stop && r.ok && rd.report) setReport(rd.report as ReportData);
+        }
       } catch {
         if (!stop) {
           setError("연결이 잠깐 끊겼어요. 다시 시도하는 중…");
@@ -59,8 +79,10 @@ export function RunProgress() {
     };
   }, [id]);
 
+  if (report) return <ReportView r={report} />;
+
   if (error && !state) {
-    return (
+    return shell(
       <Card className="rounded-2xl text-center">
         <CardHeader className="gap-2">
           <TriangleAlert className="mx-auto size-8 text-destructive" />
@@ -77,14 +99,14 @@ export function RunProgress() {
   }
 
   if (!state) {
-    return <Card className="h-56 animate-pulse rounded-2xl" aria-label="불러오는 중" />;
+    return shell(<Card className="h-56 animate-pulse rounded-2xl" aria-label="불러오는 중" />);
   }
 
   const finished = state.done + state.failed;
   const pct = state.total ? Math.round((finished / state.total) * 100) : 0;
   const running = state.status === "running" || state.status === "queued";
 
-  return (
+  return shell(
     <div className="space-y-6">
       <Card className={`rounded-2xl ${running ? "" : "card-glow ring-primary/40"}`}>
         <CardHeader className="gap-3">
@@ -139,15 +161,17 @@ export function RunProgress() {
       {!running && state.status === "done" && (
         <Card className="rounded-2xl">
           <CardHeader className="gap-2">
-            <CardTitle className="text-lg">리포트는 다음 단계에서 열려요</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Loader2 className="size-5 animate-spin text-primary" /> 리포트를 정리하는 중이에요
+            </CardTitle>
             <CardDescription className="leading-relaxed">
-              {state.done}개의 답변 원문을 내 계정에 저장했어요. 노출 빈도 · 경쟁사 · 인용 출처 · 할 일 카드로 정리하는
-              화면은 곧 이 자리에 나와요. 어떤 모습인지는 예시 리포트로 먼저 볼 수 있어요.
+              {state.done}개의 답변 원문을 노출 빈도 · 경쟁사 · 인용 출처 · 할 일 카드로 정리하고 있어요. 잠시 뒤에도 안 바뀌면
+              새로고침해 주세요.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild className="bg-brand hover:opacity-90">
-              <Link href="/app/reports/example">예시 리포트 보기</Link>
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/app/reports/example">예시 리포트 먼저 보기</Link>
             </Button>
           </CardContent>
         </Card>

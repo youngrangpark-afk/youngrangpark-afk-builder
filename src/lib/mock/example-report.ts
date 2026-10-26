@@ -1,23 +1,9 @@
 // 연습용 예시 리포트 (D-11). 실제 진단 결과가 아니다.
 // 키가 없을 때의 예시 응답과 디자인 확인용 화면이 함께 쓴다. 브랜드 이름 · 도메인은 모두 가짜.
 
-export type Strategy = "quick_win" | "long_term" | "custom";
-export type Engine = "openai" | "gemini";
-export type SourceType = "press" | "shopping" | "blog" | "magazine" | "community" | "brand_site" | "other";
+import type { Engine, ReportData, SourceType, Strategy } from "@/lib/report/types";
 
-export const engineLabel: Record<Engine, string> = { openai: "ChatGPT", gemini: "Gemini" };
-export const strategyLabel: Record<Strategy, string> = { quick_win: "공략형", long_term: "장기형", custom: "직접 쓴 질문" };
-export const sourceTypeLabel: Record<SourceType, string> = {
-  press: "언론",
-  shopping: "쇼핑 검색",
-  blog: "블로그",
-  magazine: "매거진",
-  community: "커뮤니티",
-  brand_site: "브랜드 사이트",
-  other: "기타",
-};
-
-export const exampleReport = {
+export const exampleReport: ReportData = {
   isMock: true,
   brand: { name: "예시 브랜드", category: "프래그런스", domain: "example-brand.kr" },
   runDate: "2026-10-25",

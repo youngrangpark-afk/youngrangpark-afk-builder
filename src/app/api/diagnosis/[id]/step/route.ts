@@ -1,4 +1,7 @@
+import type { Json } from "@/lib/database.types";
+import { analyzeAnswer } from "@/lib/diagnosis/analyze";
 import { askEngine, type EngineName } from "@/lib/diagnosis/engine";
+import { buildReport } from "@/lib/diagnosis/summarize";
 import { getAdminSupabase } from "@/lib/supabase/admin";
 import { getServerSupabase } from "@/lib/supabase/server";
 
@@ -30,7 +33,7 @@ export async function POST(_request: Request, ctx: RouteContext<"/api/diagnosis/
   }
 
   const admin = getAdminSupabase();
-  const { data: brand } = await admin.from("brands").select("name, benchmark_brands").eq("id", run.brand_id).single();
+  const { data: brand } = await admin.from("brands").select("name, category, site_domain, benchmark_brands").eq("id", run.brand_id).single();
   const { data: items, error: claimError } = await admin.rpc("claim_run_items", { p_run_id: run.id, p_limit: BATCH });
   if (claimError) return Response.json({ error: "잠시 후 다시 시도해 주세요." }, { status: 500 });
 
@@ -43,7 +46,7 @@ export async function POST(_request: Request, ctx: RouteContext<"/api/diagnosis/
         benchmarkBrands: brand?.benchmark_brands ?? [],
         seed: item.id,
       });
-      const { error: saveError } = await admin.from("engine_answers").upsert(
+      const { data: saved, error: saveError } = await admin.from("engine_answers").upsert(
         {
           user_id: item.user_id,
           item_id: item.id,
@@ -55,8 +58,43 @@ export async function POST(_request: Request, ctx: RouteContext<"/api/diagnosis/
           request_meta: answer.requestMeta,
         },
         { onConflict: "item_id" },
-      );
-      if (saveError) throw new Error("save");
+      ).select("id").single();
+      if (saveError || !saved) throw new Error("save");
+
+      // 답변 분석 (T-14): 언급 브랜드 · 설명 문장 · 인용 출처 — 다시 처리돼도 겹치지 않게 지우고 넣는다
+      const found = analyzeAnswer(answer.answerText, answer.rawResponse, {
+        selfName: brand?.name ?? "",
+        selfDomain: brand?.site_domain ?? null,
+        benchmarks: brand?.benchmark_brands ?? [],
+      });
+      await admin.from("mentions").delete().eq("answer_id", saved.id);
+      await admin.from("citations").delete().eq("answer_id", saved.id);
+      if (found.mentions.length) {
+        await admin.from("mentions").insert(
+          found.mentions.map((m) => ({
+            user_id: item.user_id,
+            answer_id: saved.id,
+            run_id: item.run_id,
+            brand_name: m.brandName,
+            role: m.role,
+            rank: m.rank,
+            description: m.description,
+          })),
+        );
+      }
+      if (found.citations.length) {
+        await admin.from("citations").insert(
+          found.citations.map((c) => ({
+            user_id: item.user_id,
+            answer_id: saved.id,
+            run_id: item.run_id,
+            url: c.url,
+            domain: c.domain,
+            title: c.title,
+            source_type: c.sourceType,
+          })),
+        );
+      }
       await admin
         .from("run_items")
         .update({ status: "done", done_at: new Date().toISOString(), locked_at: null, last_error: null })
@@ -80,6 +118,30 @@ export async function POST(_request: Request, ctx: RouteContext<"/api/diagnosis/
   const failed = states?.filter((s) => s.status === "failed").length ?? 0;
   const finished = done + failed >= run.total_items;
   const status = finished ? (done === 0 ? "failed" : "done") : "running";
+  // 끝났으면 리포트 집계 · 할 일 카드 3개 (T-15 · T-16)
+  let summary: Json | undefined;
+  if (finished && done > 0 && brand) {
+    const [{ data: allItems }, { data: answers }, { data: mentions }, { data: citations }] = await Promise.all([
+      admin.from("run_items").select("id, question_position, question_text, question_strategy, engine").eq("run_id", run.id),
+      admin.from("engine_answers").select("id, item_id, answer_text").eq("run_id", run.id),
+      admin.from("mentions").select("answer_id, brand_name, role, description").eq("run_id", run.id),
+      admin.from("citations").select("answer_id, domain, source_type").eq("run_id", run.id),
+    ]);
+    const { report, cards } = buildReport({
+      isMock: run.is_mock,
+      createdAt: run.created_at,
+      repeats: run.repeats,
+      brand,
+      items: allItems ?? [],
+      answers: answers ?? [],
+      mentions: mentions ?? [],
+      citations: citations ?? [],
+    });
+    await admin.from("task_cards").delete().eq("run_id", run.id);
+    await admin.from("task_cards").insert(cards.map((c) => ({ ...c, user_id: run.user_id, run_id: run.id })));
+    summary = report as unknown as Json;
+  }
+
   await admin
     .from("diagnosis_runs")
     .update({
@@ -87,6 +149,7 @@ export async function POST(_request: Request, ctx: RouteContext<"/api/diagnosis/
       failed_items: failed,
       status,
       finished_at: finished ? new Date().toISOString() : null,
+      ...(summary ? { summary } : {}),
     })
     .eq("id", run.id);
 
