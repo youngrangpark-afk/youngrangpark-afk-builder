@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   CircleCheck,
@@ -60,6 +61,7 @@ export function CandidatesPanel({ draft }: { draft: BrandDraft }) {
   const [loginOpen, setLoginOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedTo, setSavedTo] = useState<string | null>(null); // 저장한 계정 이메일
+  const router = useRouter();
 
   // 로그인한 뒤 브라우저의 브랜드 · 질문을 내 계정으로 옮긴다 (T-09). 진단 실행 자체는 T-10 · T-11.
   async function saveForDiagnosis() {
@@ -72,9 +74,27 @@ export function CandidatesPanel({ draft }: { draft: BrandDraft }) {
         setLoginOpen(true);
         return;
       }
-      await saveToAccount(draft, current);
+      const brandId = await saveToAccount(draft, current);
       setSavedTo(data.user.email ?? "내 계정");
-      toast("로그인됐어요. 브랜드와 질문 5개를 내 계정에 저장했어요. 진단 실행은 곧 열려요.");
+
+      // 진단 시작 (T-10 · T-11): 무료 1회 · 하루 상한은 서버가 확인한다
+      const res = await fetch("/api/diagnosis/start", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ brandId }),
+      });
+      const result = (await res.json()) as { runId?: string | null; error?: string };
+      if (res.ok && result.runId) {
+        toast("진단을 시작했어요.");
+        router.push(`/app/reports/${result.runId}`);
+        return;
+      }
+      if (res.status === 409 && result.runId) {
+        toast(result.error ?? "무료 진단은 1회예요.");
+        router.push(`/app/reports/${result.runId}`);
+        return;
+      }
+      toast(result.error ?? "진단을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.");
     } catch (e) {
       toast((e as Error).message || "저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
     } finally {
@@ -310,11 +330,11 @@ export function CandidatesPanel({ draft }: { draft: BrandDraft }) {
         <Card className="card-glow rounded-2xl ring-primary/40">
           <CardHeader className="gap-2">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <CircleCheck className="size-5 text-primary" /> 진단 준비 완료
+              <CircleCheck className="size-5 text-primary" /> 내 계정에 저장됨
             </CardTitle>
             <CardDescription className="leading-relaxed">
-              <strong className="text-foreground">{savedTo}</strong> 계정에 브랜드와 질문 5개를 저장했어요. 진단 실행은 곧
-              열려요. 질문을 바꾸면 [진단 시작]을 다시 눌러 저장해 주세요.
+              <strong className="text-foreground">{savedTo}</strong> 계정에 브랜드와 질문 5개를 저장했어요. 진단이 시작되지
+              않았다면 위쪽 안내를 확인하고 [진단 시작]을 다시 눌러 주세요.
             </CardDescription>
           </CardHeader>
         </Card>

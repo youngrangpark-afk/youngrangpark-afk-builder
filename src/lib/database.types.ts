@@ -626,7 +626,36 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      claim_run_items: {
+        Args: { p_limit: number; p_run_id: string }
+        Returns: {
+          attempts: number
+          created_at: string
+          done_at: string | null
+          engine: string
+          id: string
+          last_error: string | null
+          locked_at: string | null
+          question_id: string | null
+          question_position: number
+          question_strategy: string
+          question_text: string
+          repeat_no: number
+          run_id: string
+          status: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "run_items"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      increment_usage: {
+        Args: { p_kind: string; p_limit: number; p_scope: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
