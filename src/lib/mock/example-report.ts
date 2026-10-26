@@ -19,7 +19,7 @@ export const sourceTypeLabel: Record<SourceType, string> = {
 
 export const exampleReport = {
   isMock: true,
-  brand: { name: "예시 브랜드", category: "홈프레이그런스", domain: "example-brand.kr" },
+  brand: { name: "예시 브랜드", category: "프래그런스", domain: "example-brand.kr" },
   runDate: "2026-10-25",
   engines: ["openai", "gemini"] as Engine[],
   repeats: 3,
@@ -29,13 +29,13 @@ export const exampleReport = {
     { position: 1, strategy: "quick_win", text: "3만원대 집들이 선물 디퓨저 추천해 줘", hits: { openai: 2, gemini: 1 } },
     { position: 2, strategy: "quick_win", text: "우디 향 패브릭 퍼퓸 추천해 줘", hits: { openai: 1, gemini: 2 } },
     { position: 3, strategy: "quick_win", text: "선물하기 좋은 니치 사쉐 브랜드 알려 줘", hits: { openai: 2, gemini: 0 } },
-    { position: 4, strategy: "long_term", text: "니치 홈프레이그런스 브랜드 추천해 줘", hits: { openai: 0, gemini: 0 } },
+    { position: 4, strategy: "long_term", text: "니치 프래그런스 브랜드 추천해 줘", hits: { openai: 0, gemini: 0 } },
     { position: 5, strategy: "long_term", text: "집들이 선물 디퓨저 추천해 줘", hits: { openai: 0, gemini: 1 } },
   ] as { position: number; strategy: Strategy; text: string; hits: Record<Engine, number> }[],
   // 30번의 답변 중 나온 횟수
   brands: [
     { name: "브랜드 A", role: "competitor", count: 26, description: "니치 향수 감성의 대표적인 디퓨저 브랜드로 자주 소개돼요." },
-    { name: "기준 브랜드 D", role: "benchmark", count: 22, description: "고급 선물용 홈프레이그런스의 기준처럼 언급돼요." },
+    { name: "기준 브랜드 D", role: "benchmark", count: 22, description: "고급 선물용 프래그런스의 기준처럼 언급돼요." },
     { name: "브랜드 B", role: "competitor", count: 19, description: "가성비 좋은 집들이 선물로 추천돼요." },
     { name: "브랜드 C", role: "competitor", count: 12, description: "패브릭 퍼퓸 쪽에서 주로 나와요." },
     { name: "예시 브랜드", role: "self", count: 9, description: "향이 좋은 신생 브랜드로만 짧게 언급돼요." },
@@ -81,9 +81,9 @@ export const exampleReport = {
       sources: ["lifestyle-blog.example.com", "price-compare.example.co.kr"],
     },
     {
-      question: "니치 홈프레이그런스 브랜드 추천해 줘",
+      question: "니치 프래그런스 브랜드 추천해 줘",
       engine: "gemini" as Engine,
-      text: "대표적인 니치 홈프레이그런스 브랜드로는 브랜드 A, 기준 브랜드 D, 브랜드 C 가 있어요. 선물용으로는 기준 브랜드 D 가 …",
+      text: "대표적인 니치 프래그런스 브랜드로는 브랜드 A, 기준 브랜드 D, 브랜드 C 가 있어요. 선물용으로는 기준 브랜드 D 가 …",
       sources: ["deco-magazine.example.com", "news.example.co.kr"],
     },
   ],

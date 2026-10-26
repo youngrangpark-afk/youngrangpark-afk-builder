@@ -258,7 +258,7 @@ export default function Home() {
             <p className="text-sm font-medium text-muted-foreground">만든 사람</p>
             <p className="text-lg font-bold">The witch</p>
             <p className="text-base leading-relaxed text-muted-foreground">
-              니치 홈프레이그런스 브랜드를 직접 준비하며, 내게 필요했던 GEO 도구를 모두가 쓸 수 있게 만들고 있어요.
+              니치 프래그런스 브랜드를 직접 준비하며, 내게 필요했던 GEO 도구를 모두가 쓸 수 있게 만들고 있어요.
             </p>
           </div>
         </div>

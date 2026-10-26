@@ -26,7 +26,7 @@ export async function replaceQuestion(input: SuggestInput, req: ReplaceRequest):
 // 다시 만들기용 예비 질문 (연습용 예시)
 function mockAlternatives({ category }: SuggestInput): Candidate[] {
   const c = category.trim();
-  const home = /향|프레이그런스|디퓨저|캔들|퍼퓸|사쉐/.test(c);
+  const home = /향|프래그런스|프레그런스|프레이그런스|디퓨저|캔들|퍼퓸|사쉐/.test(c);
   const quick: [string, string][] = home
     ? [
         ["5만원 이하 집들이 선물 세트 추천해 줘", "세트 · 가격 조건이 붙으면 단품 위주 대형 브랜드가 덜 나와요"],
@@ -57,7 +57,7 @@ function mockAlternatives({ category }: SuggestInput): Candidate[] {
 function mockCandidates({ category, benchmarkBrands }: SuggestInput): Candidate[] {
   const c = category.trim();
   const bench = benchmarkBrands.map((b) => b.trim()).filter(Boolean);
-  const home = /향|프레이그런스|디퓨저|캔들|퍼퓸|사쉐/.test(c);
+  const home = /향|프래그런스|프레그런스|프레이그런스|디퓨저|캔들|퍼퓸|사쉐/.test(c);
 
   const quick: [string, string][] = home
     ? [
@@ -83,7 +83,7 @@ function mockCandidates({ category, benchmarkBrands }: SuggestInput): Candidate[
 
   const long: [string, string][] = home
     ? [
-        ["니치 홈프레이그런스 브랜드 추천해 줘", "카테고리 대표 질문이라 지금은 경쟁이 세지만 꼭 잡아야 해요"],
+        ["니치 프래그런스 브랜드 추천해 줘", "카테고리 대표 질문이라 지금은 경쟁이 세지만 꼭 잡아야 해요"],
         ["집들이 선물 디퓨저 추천해 줘", "가장 많이 묻는 선물 질문 — 장기적으로 노출이 쌓여야 해요"],
         ["고급 디퓨저 브랜드 순위 알려 줘", "순위형 질문은 언론 · 매거진 출처가 쌓여야 들어갈 수 있어요"],
         [bench[1] ? `${bench[1]} 랑 비슷한 브랜드 뭐 있어?` : "향 좋은 디퓨저 브랜드 추천해 줘", "기준 브랜드 옆자리를 노리는 질문이에요"],

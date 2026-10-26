@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { parseDraft, saveDraft, toDomain, useDraftRaw, type BrandDraft } from "@/lib/draft";
 
-const categoryPresets = ["홈프레이그런스", "뷰티", "패션", "식품", "리빙"];
+const categoryPresets = ["프래그런스", "뷰티", "패션", "식품", "리빙"];
 
 // `/app` 브랜드 입력 (T-04). 저장된 초안을 읽은 뒤에 폼을 그린다.
 export function BrandFormLoader() {
