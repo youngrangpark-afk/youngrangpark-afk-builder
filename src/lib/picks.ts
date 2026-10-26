@@ -1,11 +1,11 @@
 "use client";
 
-import { PICK_COUNT, type Candidate } from "@/lib/questions";
+import { PICK_COUNT, type Candidate, type Recommendation } from "@/lib/questions";
 
-// 질문 후보 · 고친 글 · 고른 순서를 브라우저에 두는 곳 (D-07, D-16)
+// 질문 후보 · 고친 글 · 고른 순서 · 추천 조합을 브라우저에 두는 곳 (D-07, D-16, D-18)
 export const PICKS_STORE = "geo-sniper:candidates";
 
-export type Picks = { isMock: boolean; candidates: Candidate[]; selected: string[] };
+export type Picks = { isMock: boolean; candidates: Candidate[]; selected: string[]; recommendation?: Recommendation };
 type Stored = { key: string } & Picks;
 
 export function readPicks(key: string): Picks | null {
@@ -14,7 +14,12 @@ export function readPicks(key: string): Picks | null {
     if (!s || s.key !== key || !Array.isArray(s.candidates)) return null;
     const ids = new Set(s.candidates.map((c) => c.id));
     const selected = Array.isArray(s.selected) ? s.selected.filter((id) => ids.has(id)).slice(0, PICK_COUNT) : [];
-    return { isMock: !!s.isMock, candidates: s.candidates, selected };
+    const rec = s.recommendation;
+    const recommendation =
+      rec && Array.isArray(rec.ids) && typeof rec.why === "string" && typeof rec.expected === "string"
+        ? { ...rec, ids: rec.ids.filter((id) => ids.has(id)) }
+        : undefined;
+    return { isMock: !!s.isMock, candidates: s.candidates, selected, recommendation };
   } catch {
     return null;
   }

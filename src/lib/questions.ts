@@ -4,12 +4,24 @@
 export type CandidateStrategy = "quick_win" | "long_term";
 export type QuestionStrategy = CandidateStrategy | "custom";
 
+// 진단 전 AI 의 추정 (D-18). 실제 노출은 리포트에서 확인한다.
+export type Likelihood = "high" | "medium" | "low";
+export const likelihoodLabel: Record<Likelihood, string> = { high: "높음", medium: "보통", low: "낮음" };
+
 export type Candidate = {
   id: string;
   strategy: QuestionStrategy;
   text: string; // 지금 쓰는 글 (고쳤으면 고친 글)
   rationale: string; // AI 의 추정 — 화면에 "예상"으로 표시 (직접 쓴 질문은 빈 글)
+  likelihood?: Likelihood; // 예상 노출 가능성
   generatedText?: string; // AI 가 처음 만든 원본 (고치기 전)
+};
+
+// 추천 조합 5개 (D-18): 왜 이 조합인지 + 예상 결과
+export type Recommendation = {
+  ids: string[];
+  why: string;
+  expected: string;
 };
 
 export type SuggestInput = {
@@ -21,6 +33,7 @@ export type SuggestInput = {
 export type SuggestResult = {
   isMock: boolean;
   candidates: Candidate[];
+  recommendation?: Recommendation;
 };
 
 // 하나만 다시 만들기: 같은 종류로, 이미 화면에 있는 질문과 겹치지 않게

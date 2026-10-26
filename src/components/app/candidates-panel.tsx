@@ -2,7 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { CircleCheck, Crosshair, Info, Loader2, Mountain, PenLine, Plus, RotateCcw, Trash2 } from "lucide-react";
+import {
+  CircleCheck,
+  Crosshair,
+  Info,
+  Loader2,
+  Mountain,
+  PenLine,
+  Plus,
+  RotateCcw,
+  Sparkles,
+  Target,
+  Trash2,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,12 +25,14 @@ import type { BrandDraft } from "@/lib/draft";
 import { readPicks as readStored, writePicks as writeStored, type Picks } from "@/lib/picks";
 import {
   isValidQuestionText,
+  likelihoodLabel,
   MAX_CUSTOM,
   PICK_COUNT,
   QUESTION_MAX,
   suggestKey,
   type Candidate,
   type CandidateStrategy,
+  type Recommendation,
   type SuggestInput,
   type SuggestResult,
 } from "@/lib/questions";
@@ -91,7 +105,12 @@ export function CandidatesPanel({ draft }: { draft: BrandDraft }) {
     postSuggest(input)
       .then((data) => {
         if (cancelled) return;
-        const next = { isMock: data.isMock, candidates: data.candidates, selected: [] };
+        const next = {
+          isMock: data.isMock,
+          candidates: data.candidates,
+          selected: [],
+          recommendation: data.recommendation,
+        };
         writeStored(key, next);
         setPicks(next);
       })
@@ -191,7 +210,19 @@ export function CandidatesPanel({ draft }: { draft: BrandDraft }) {
       ...p,
       candidates: p.candidates.map((x) => (x.id === c.id ? fresh : x)),
       selected: p.selected.map((id) => (id === c.id ? fresh.id : id)),
+      recommendation: p.recommendation && {
+        ...p.recommendation,
+        ids: p.recommendation.ids.map((id) => (id === c.id ? fresh.id : id)),
+      },
     }));
+  }
+
+  // 추천 조합 그대로 고르기 (D-18). 이미 고른 것이 있으면 추천 조합으로 바꾼다.
+  function applyRecommendation() {
+    const rec = picks?.recommendation;
+    if (!rec) return;
+    update((p) => ({ ...p, selected: rec.ids.slice(0, PICK_COUNT) }));
+    toast("추천 조합 5개를 골랐어요. 아래에서 빼거나 바꿀 수 있어요.");
   }
 
   function addCustom(text: string) {
@@ -225,10 +256,22 @@ export function CandidatesPanel({ draft }: { draft: BrandDraft }) {
           )}
         </div>
         <p className="text-sm leading-relaxed text-muted-foreground">
-          AI 가 추천한 10개 중 공략형 · 장기형을 자유롭게 섞어 골라요. 고르고 나서 고치거나 직접 써도 돼요. 추천 이유는
+          추천 조합을 그대로 써도 되고, 아래 10개 중 공략형 · 장기형을 자유롭게 섞어 골라도 돼요. 이유와 노출 가능성은
           진단 전 <strong className="text-foreground">예상</strong>이고, 실제 노출은 리포트에서 확인해요.
         </p>
       </div>
+
+      {picks.recommendation && picks.recommendation.ids.length === PICK_COUNT && (
+        <RecommendationCard
+          rec={picks.recommendation}
+          candidates={picks.candidates}
+          applied={
+            picks.selected.length === PICK_COUNT &&
+            picks.recommendation.ids.every((id) => selectedSet.has(id))
+          }
+          onApply={applyRecommendation}
+        />
+      )}
 
       <CandidateGroup
         icon={<Crosshair className="size-4 text-primary" />}
@@ -301,6 +344,78 @@ export function CandidatesPanel({ draft }: { draft: BrandDraft }) {
         </div>
       </div>
     </div>
+  );
+}
+
+// 추천 조합 카드 (D-18): 5개 질문 + 왜 이 조합인지 + 예상 결과. 맨 위에 먼저 보여 준다.
+function RecommendationCard({
+  rec,
+  candidates,
+  applied,
+  onApply,
+}: {
+  rec: Recommendation;
+  candidates: Candidate[];
+  applied: boolean;
+  onApply: () => void;
+}) {
+  const items = rec.ids.map((id) => candidates.find((c) => c.id === id)).filter((c): c is Candidate => !!c);
+  return (
+    <Card className="card-glow rounded-2xl ring-primary/40">
+      <CardHeader className="gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge className="gap-1 rounded-full">
+            <Sparkles className="size-3" /> 추천 조합
+          </Badge>
+          <span className="text-xs text-muted-foreground">
+            공략형 {items.filter((c) => c.strategy === "quick_win").length} · 장기형{" "}
+            {items.filter((c) => c.strategy === "long_term").length}
+          </span>
+        </div>
+        <CardTitle className="text-lg leading-snug">이 5개로 시작하는 걸 추천해요</CardTitle>
+        <CardDescription className="leading-relaxed">
+          <span className="font-medium text-foreground">왜</span> · {rec.why}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <ol className="space-y-2">
+          {items.map((c, i) => (
+            <li key={c.id} className="flex items-start gap-2 text-sm">
+              <span className="w-4 shrink-0 font-semibold text-muted-foreground tabular-nums">{i + 1}</span>
+              <span className="min-w-0 flex-1">
+                <span className="font-medium">{c.text}</span>
+                <span className="mt-1 flex flex-wrap gap-1.5">
+                  <Badge variant="outline" className="gap-1 rounded-full text-[0.7rem]">
+                    {c.strategy === "quick_win" ? <Crosshair className="size-3" /> : <Mountain className="size-3" />}
+                    {c.strategy === "quick_win" ? "공략형" : "장기형"}
+                  </Badge>
+                  {c.likelihood && (
+                    <Badge variant="secondary" className="rounded-full text-[0.7rem]">
+                      예상 노출 {likelihoodLabel[c.likelihood]}
+                    </Badge>
+                  )}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ol>
+        <p className="flex items-start gap-2 rounded-xl bg-muted p-3 text-sm leading-relaxed text-muted-foreground">
+          <Target className="mt-0.5 size-4 shrink-0 text-primary" />
+          <span>
+            <span className="font-medium text-foreground">예상 결과</span> · {rec.expected}
+          </span>
+        </p>
+        {applied ? (
+          <p className="flex items-center gap-2 text-sm font-medium text-primary">
+            <CircleCheck className="size-4" /> 추천 조합을 골랐어요. 아래에서 바꿀 수 있어요.
+          </p>
+        ) : (
+          <Button onClick={onApply} className="bg-brand w-full hover:opacity-90 sm:w-auto">
+            이 조합으로 고르기
+          </Button>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -410,6 +525,11 @@ function QuestionCard({ c, selectedSet, onToggle, onSave, onRegenerate, onRemove
               <p className="text-sm text-muted-foreground">직접 쓴 질문</p>
             ) : (
               <p className="text-sm leading-relaxed text-muted-foreground">
+                {c.likelihood && (
+                  <Badge variant="secondary" className="mr-1.5 rounded-full align-middle text-[0.7rem]">
+                    예상 노출 {likelihoodLabel[c.likelihood]}
+                  </Badge>
+                )}
                 <span className="font-medium text-foreground">예상</span> · {c.rationale}
                 {c.generatedText && c.generatedText !== c.text && <span> · 고친 질문</span>}
               </p>

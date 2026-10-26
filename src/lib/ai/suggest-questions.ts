@@ -1,17 +1,32 @@
 import "server-only";
-import type { Candidate, ReplaceRequest, SuggestInput, SuggestResult } from "@/lib/questions";
+import type { Candidate, Likelihood, Recommendation, ReplaceRequest, SuggestInput, SuggestResult } from "@/lib/questions";
 
 // ★ 실제 키로 바꿀 지점은 이 파일 하나다.
 // ANTHROPIC_API_KEY 가 없으면 연습용 예시(mock)를 돌려준다.
 // 키를 넣을 때 할 일 (TASKS T-07 "실제 연결 대기"):
-//   1) Claude Sonnet 5.5 로 후보 10개 + 이유를 JSON 으로 받기 (question_templates 를 참고 자료로 넘김)
+//   1) Claude Sonnet 5.5 로 후보 10개 + 이유 + 예상 노출 가능성 + 추천 조합 5개(D-18)를 JSON 으로 받기
+//      (question_templates 를 참고 자료로 넘김)
 //   2) 로그인 전 생성의 하루 상한 (usage_counters, D-03) — 숫자를 원자적으로 올리는 DB 함수가 필요해 DB.md 확인 후 migration
 export async function suggestQuestions(input: SuggestInput): Promise<SuggestResult> {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return { isMock: true, candidates: mockCandidates(input) };
-  }
   // 실제 연결 전까지는 키가 있어도 예시로 돌려준다 (상한 없이 실제 비용이 나가지 않게).
-  return { isMock: true, candidates: mockCandidates(input) };
+  const candidates = mockCandidates(input);
+  return { isMock: true, candidates, recommendation: mockRecommendation(candidates) };
+}
+
+// 추천 조합 (연습용 예시): 지금 잡을 수 있는 공략형 3 + 기준선이 될 장기형 2
+function mockRecommendation(candidates: Candidate[]): Recommendation {
+  const rank: Record<Likelihood, number> = { high: 0, medium: 1, low: 2 };
+  const by = (s: Candidate["strategy"]) =>
+    candidates
+      .filter((c) => c.strategy === s)
+      .sort((a, b) => rank[a.likelihood ?? "low"] - rank[b.likelihood ?? "low"]);
+  const ids = [...by("quick_win").slice(0, 3), ...by("long_term").slice(0, 2)].map((c) => c.id);
+  return {
+    ids,
+    why: "지금 잡을 수 있는 공략형 3개로 첫 노출을 노리고, 카테고리 대표 질문 2개로 경쟁 브랜드와의 거리를 기준선으로 남기는 조합이에요.",
+    expected:
+      "공략형 3개 중 1~2개에서 이름이 나올 수 있어요. 장기형 2개는 지금은 거의 안 나오는 게 정상이고, 다음 진단 때 얼마나 가까워졌는지 비교하는 기준이 돼요.",
+  };
 }
 
 // 질문 하나만 다시 만들기 (T-08). 같은 종류로, 화면에 있는 질문과 겹치지 않게.
@@ -48,8 +63,8 @@ function mockAlternatives({ category }: SuggestInput): Candidate[] {
         [`${c} 브랜드 어디가 좋아?`, "대표 질문이라 길게 보고 잡아야 해요"],
       ];
   return [
-    ...quick.map(([text, rationale], i) => ({ id: `qa${i}`, strategy: "quick_win" as const, text, rationale })),
-    ...long.map(([text, rationale], i) => ({ id: `la${i}`, strategy: "long_term" as const, text, rationale })),
+    ...quick.map(([text, rationale], i) => ({ id: `qa${i}`, strategy: "quick_win" as const, text, rationale, likelihood: "medium" as const })),
+    ...long.map(([text, rationale], i) => ({ id: `la${i}`, strategy: "long_term" as const, text, rationale, likelihood: "low" as const })),
   ];
 }
 
@@ -97,8 +112,24 @@ function mockCandidates({ category, benchmarkBrands }: SuggestInput): Candidate[
         [`${c} 브랜드 비교해 줘`, "비교형 질문은 여러 출처가 필요해 시간이 걸려요"],
       ];
 
+  // 예상 노출 가능성 (연습용 예시의 고정값 — 실제 연결 때 AI 가 추정)
+  const quickLikelihood: Likelihood[] = ["high", "medium", "high", "medium", bench[0] ? "high" : "medium"];
+  const longLikelihood: Likelihood[] = ["low", "low", "low", bench[1] ? "medium" : "low", "low"];
+
   return [
-    ...quick.map(([text, rationale], i) => ({ id: `q${i + 1}`, strategy: "quick_win" as const, text, rationale })),
-    ...long.map(([text, rationale], i) => ({ id: `l${i + 1}`, strategy: "long_term" as const, text, rationale })),
+    ...quick.map(([text, rationale], i) => ({
+      id: `q${i + 1}`,
+      strategy: "quick_win" as const,
+      text,
+      rationale,
+      likelihood: quickLikelihood[i],
+    })),
+    ...long.map(([text, rationale], i) => ({
+      id: `l${i + 1}`,
+      strategy: "long_term" as const,
+      text,
+      rationale,
+      likelihood: longLikelihood[i],
+    })),
   ];
 }
