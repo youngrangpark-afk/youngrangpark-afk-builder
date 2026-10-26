@@ -230,7 +230,7 @@ secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
 max_frequency = "1m0s"
 # Number of characters used in the email OTP.
-otp_length = 8
+otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
@@ -243,6 +243,15 @@ otp_expiry = 3600
 # pass = "env(SENDGRID_API_KEY)"
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
+
+# 로그인 코드 메일 양식 (D-19): 무료 플랜은 Supabase 기본 메일로는 양식을 바꿀 수 없다.
+# 메일 발송 서비스(SMTP, T-21)를 연결한 뒤 아래 주석을 풀고 config push 한다.
+# [auth.email.template.magic_link]
+# subject = "GEO 스나이퍼 로그인 코드"
+# content_path = "./supabase/templates/login-code.html"
+# [auth.email.template.confirmation]
+# subject = "GEO 스나이퍼 로그인 코드"
+# content_path = "./supabase/templates/login-code.html"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]
@@ -320,6 +329,16 @@ max_frequency = "5s"
 # Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
 # `twitter`, `x`, `slack`, `spotify`, `workos`, `zoom`.
+# 구글 로그인 (D-15). 값은 .env.local 에만 있고 여기에는 이름만 적는다.
+[auth.external.google]
+enabled = true
+client_id = "env(GOOGLE_CLIENT_ID)"
+secret = "env(GOOGLE_CLIENT_SECRET)"
+redirect_uri = ""
+url = ""
+skip_nonce_check = false
+email_optional = false
+
 [auth.external.apple]
 enabled = false
 client_id = ""
