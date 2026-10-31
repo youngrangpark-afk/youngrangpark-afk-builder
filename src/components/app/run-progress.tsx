@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { AppHeader } from "@/components/app/app-header";
+import { DashboardBanner } from "@/components/app/dashboard-banner";
 import { ReportView } from "@/components/app/report-view";
 import { PICKS_STORE } from "@/lib/picks";
 import type { ReportData } from "@/lib/report/types";
@@ -81,19 +82,7 @@ export function RunProgress() {
 
   if (report)
     return (
-      <ReportView
-        r={report}
-        banner={
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card p-4">
-            <p className="text-sm">
-              <strong>이번 주 목표 · 액션 플랜(실행 초안)</strong>이 대시보드에 자동으로 만들어졌어요.
-            </p>
-            <Button asChild size="sm" className="bg-brand hover:opacity-90">
-              <Link href="/app">대시보드로</Link>
-            </Button>
-          </div>
-        }
-      />
+      <ReportView r={report} banner={<DashboardBanner />} />
     );
 
   if (error && !state) {
@@ -165,8 +154,8 @@ export function RunProgress() {
           </p>
           {running && (
             <p className="rounded-xl bg-muted p-3 text-xs leading-relaxed text-muted-foreground">
-              <strong className="text-foreground">창을 닫아도 서버에서 계속 진행돼요.</strong> 끝나면 이번 주 목표와 액션
-              플랜이 대시보드에 자동으로 만들어져요.
+              <strong className="text-foreground">창을 닫아도 서버에서 계속 진행돼요.</strong> 끝나면 이 화면에서 리포트와
+              할 일 3가지를 볼 수 있어요.
             </p>
           )}
           {error && <p className="text-xs text-muted-foreground">{error}</p>}

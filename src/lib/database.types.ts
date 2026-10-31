@@ -134,6 +134,24 @@ export type Database = {
           },
         ]
       }
+      dashboard_access: {
+        Row: {
+          granted_at: string
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          granted_at?: string
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          granted_at?: string
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       diagnosis_runs: {
         Row: {
           brand_id: string

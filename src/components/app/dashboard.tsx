@@ -28,10 +28,11 @@ import type { Database } from "@/lib/database.types";
 import type { ReportData } from "@/lib/report/types";
 import { getBrowserSupabase } from "@/lib/supabase/browser";
 
-type Brand = Pick<
+export type Brand = Pick<
   Database["public"]["Tables"]["brands"]["Row"],
   "id" | "name" | "category" | "auto_mode" | "aliases" | "aliases_checked_at"
 >;
+export type DashboardData = { runs: Run[]; goals: Goal[]; cards: CardRow[] };
 type Run = Pick<
   Database["public"]["Tables"]["diagnosis_runs"]["Row"],
   "id" | "created_at" | "status" | "trigger" | "done_items" | "total_items" | "summary" | "is_mock"
@@ -69,8 +70,10 @@ function daysLeft(due: string) {
 }
 
 // 대시보드 (T-33, D-23): 이번 주 목표 · 액션 플랜(실행 초안) · 주간 추이. 기본은 자동, 표시는 선택.
-export function Dashboard({ brands, onNewBrand }: { brands: Brand[]; onNewBrand: () => void }) {
+// example 이 있으면 예시 데이터로 그리고 저장하지 않는다 (/app/dashboard/example, D-27).
+export function Dashboard({ brands, example }: { brands: Brand[]; example?: () => DashboardData }) {
   const router = useRouter();
+  const reportHref = (id: string) => (example ? "/app/reports/example" : `/app/reports/${id}`);
   const [brandId, setBrandId] = useState(brands[0].id);
   const [brand, setBrand] = useState<Brand>(brands[0]);
   const [runs, setRuns] = useState<Run[] | null>(null);
@@ -80,8 +83,21 @@ export function Dashboard({ brands, onNewBrand }: { brands: Brand[]; onNewBrand:
   const [reload, setReload] = useState(0);
 
   useEffect(() => {
-    const supabase = getBrowserSupabase();
     let stop = false;
+    if (example) {
+      // 날짜 계산이 들어 있어 화면이 뜬 뒤에 채운다
+      const d = example();
+      Promise.resolve().then(() => {
+        if (stop) return;
+        setRuns(d.runs);
+        setGoals(d.goals);
+        setCards(d.cards);
+      });
+      return () => {
+        stop = true;
+      };
+    }
+    const supabase = getBrowserSupabase();
     (async () => {
       const [{ data: r }, { data: g }] = await Promise.all([
         supabase
@@ -108,7 +124,7 @@ export function Dashboard({ brands, onNewBrand }: { brands: Brand[]; onNewBrand:
     return () => {
       stop = true;
     };
-  }, [brandId, reload]);
+  }, [brandId, reload, example]);
 
   // 진행 중인 진단이 있으면 10초마다 새로 읽는다 (처리는 서버 예약 실행이 한다)
   const running = runs?.find((r) => r.status === "running");
@@ -120,12 +136,14 @@ export function Dashboard({ brands, onNewBrand }: { brands: Brand[]; onNewBrand:
 
   async function setStatus(id: string, status: "auto" | "done" | "skipped") {
     setCards((cs) => cs.map((c) => (c.id === id ? { ...c, status } : c)));
+    if (example) return;
     const { error } = await getBrowserSupabase().from("task_cards").update({ status }).eq("id", id);
     if (error) toast("저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
   }
 
   async function setAuto(on: boolean) {
     setBrand((b) => ({ ...b, auto_mode: on }));
+    if (example) return;
     const { error } = await getBrowserSupabase().from("brands").update({ auto_mode: on }).eq("id", brand.id);
     toast(error ? "저장하지 못했어요." : on ? "매주 월요일 오전 9시에 자동으로 진단해요." : "자동 진단을 껐어요.");
   }
@@ -134,11 +152,13 @@ export function Dashboard({ brands, onNewBrand }: { brands: Brand[]; onNewBrand:
   async function removeAlias(alias: string) {
     const aliases = brand.aliases.filter((a) => a !== alias);
     setBrand((b) => ({ ...b, aliases }));
+    if (example) return;
     const { error } = await getBrowserSupabase().from("brands").update({ aliases }).eq("id", brand.id);
     toast(error ? "저장하지 못했어요." : `“${alias}” 표기를 뺐어요. 다음 진단부터 반영돼요.`);
   }
 
   async function runNow() {
+    if (example) return router.push("/app");
     setBusy(true);
     const res = await fetch("/api/diagnosis/start", {
       method: "POST",
@@ -161,6 +181,16 @@ export function Dashboard({ brands, onNewBrand }: { brands: Brand[]; onNewBrand:
 
   return (
     <div className="space-y-6">
+      {example && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card p-4">
+          <p className="text-sm">
+            <strong>예시 대시보드예요.</strong> 이용 중인 브랜드는 매주 월요일 자동으로 진단하고 여기서 목표 · 할 일을 관리해요.
+          </p>
+          <Button asChild size="sm" variant="outline">
+            <Link href="/app/reports/example">예시 리포트 보기</Link>
+          </Button>
+        </div>
+      )}
       {/* 머리: 브랜드 · 자동 모드 · 다시 진단 */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
@@ -317,7 +347,7 @@ export function Dashboard({ brands, onNewBrand }: { brands: Brand[]; onNewBrand:
                           목표 {g.status === "achieved" ? "달성" : "미달"}
                         </Badge>
                       )}
-                      <Link href={`/app/reports/${r.id}`} className="text-xs text-muted-foreground underline-offset-4 hover:underline">
+                      <Link href={reportHref(r.id)} className="text-xs text-muted-foreground underline-offset-4 hover:underline">
                         상세
                       </Link>
                     </div>
@@ -332,7 +362,7 @@ export function Dashboard({ brands, onNewBrand }: { brands: Brand[]; onNewBrand:
       <div className="flex flex-wrap gap-2">
         {latestDone && (
           <Button asChild variant="outline">
-            <Link href={`/app/reports/${latestDone.id}`}>
+            <Link href={reportHref(latestDone.id)}>
               <FileText /> 최근 상세 리포트{latest ? ` (${latest.hits}/${latest.total})` : ""}
             </Link>
           </Button>
@@ -340,8 +370,8 @@ export function Dashboard({ brands, onNewBrand }: { brands: Brand[]; onNewBrand:
         <Button variant="ghost" disabled={busy || !!running} onClick={() => void runNow()}>
           {busy ? <Loader2 className="animate-spin" /> : <RotateCcw />} 지금 다시 진단
         </Button>
-        <Button variant="ghost" onClick={onNewBrand}>
-          다른 브랜드 진단
+        <Button asChild variant="ghost">
+          <Link href="/app">{example ? "내 브랜드 무료 진단 해보기" : "다른 브랜드 진단"}</Link>
         </Button>
       </div>
     </div>

@@ -29,7 +29,16 @@ function GoogleMark() {
 }
 
 // [진단 시작] 직전 로그인 (D-03 · D-04). 메일의 링크를 누르면 /auth/callback 을 거쳐 질문 화면으로 돌아온다.
-export function LoginDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+// next: 로그인 뒤 돌아올 화면 (기본은 질문 화면)
+export function LoginDialog({
+  open,
+  onOpenChange,
+  next = "/app/questions",
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  next?: string;
+}) {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "sent">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +50,7 @@ export function LoginDialog({ open, onOpenChange }: { open: boolean; onOpenChang
     setGoogleBusy(true);
     const { error } = await getBrowserSupabase().auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/app/questions` },
+      options: { redirectTo: `${window.location.origin}/auth/callback?next=${next}` },
     });
     if (error) {
       setGoogleBusy(false);
@@ -59,7 +68,7 @@ export function LoginDialog({ open, onOpenChange }: { open: boolean; onOpenChang
     setState("sending");
     const { error } = await getBrowserSupabase().auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/app/questions` },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${next}` },
     });
     if (error) {
       setState("idle");
