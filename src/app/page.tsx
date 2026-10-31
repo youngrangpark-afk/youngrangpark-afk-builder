@@ -92,8 +92,8 @@ export default function Home() {
             </h1>
             <div className="mx-auto max-w-2xl space-y-2 text-base leading-relaxed text-muted-foreground md:text-lg">
               <p>
-                ChatGPT · Gemini 가 우리 브랜드를 얼마나 자주 말하는지 진단하고, AI 검색으로 손님을 더 데려오려면
-                이번 주에 무엇을 하면 되는지까지 알려 드려요.
+                ChatGPT · Gemini가 우리 브랜드를 얼마나 추천하는지 진단하고, AI 검색으로 더 많은 고객이 오도록 전략부터
+                실행까지 알아서 해요.
               </p>
               <p>뷰티 브랜드를 운영하는 대표님과 마케팅 담당자를 위해 만들고 있어요.</p>
             </div>

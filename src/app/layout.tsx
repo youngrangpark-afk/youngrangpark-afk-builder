@@ -13,7 +13,7 @@ const pretendard = localFont({
 const siteUrl = "https://youngrangpark-afk-builder.vercel.app";
 const title = "GEO 스나이퍼 — 브랜드명만 넣으면 AI 검색 노출 진단";
 const description =
-  "ChatGPT · Gemini 가 우리 브랜드를 얼마나 자주 말하는지 진단하고, AI 검색으로 손님을 더 데려오려면 이번 주에 무엇을 하면 되는지까지 알려 드려요.";
+  "ChatGPT · Gemini가 우리 브랜드를 얼마나 추천하는지 진단하고, AI 검색으로 더 많은 고객이 오도록 전략부터 실행까지 알아서 해요.";
 const keywords = ["GEO", "AI 검색 노출", "뷰티 브랜드", "브랜드 마케팅"];
 
 export const metadata: Metadata = {
