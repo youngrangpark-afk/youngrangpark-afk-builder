@@ -12,7 +12,7 @@ export default function DashboardPage() {
   return (
     <main className="page-glow flex-1 pb-16">
       <AppHeader step="대시보드" />
-      <div className="mx-auto max-w-3xl px-4 pt-10 md:pt-14">
+      <div className="mx-auto max-w-4xl px-4 pt-10 md:pt-14">
         <DashboardHome />
       </div>
     </main>

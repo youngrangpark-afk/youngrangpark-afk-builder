@@ -18,8 +18,10 @@ export const exampleBrand: Brand = {
 
 const WEEK = 7 * 86400e3;
 
-// 질문 5개 × 엔진 2 칸에 노출 수를 앞에서부터 나눠 담는다 (칸마다 최대 3번)
-function summaryWith(hits: number): Json {
+// 이번 주(9번)는 예시 리포트 그대로, 지난주들은 질문 5개 × 엔진 2 칸에 노출 수를 앞에서부터 나눠 담는다 (칸마다 최대 3번)
+function summaryWith(hits: number, runDate: string): Json {
+  const own = exampleReport.questions.reduce((s, q) => s + q.hits.openai + q.hits.gemini, 0);
+  if (hits === own) return { ...exampleReport, runDate } satisfies ReportData as unknown as Json;
   let left = hits;
   const questions = exampleReport.questions.map((q) => {
     const openai = Math.min(3, left);
@@ -28,7 +30,7 @@ function summaryWith(hits: number): Json {
     left -= gemini;
     return { ...q, hits: { openai, gemini } };
   });
-  return { ...exampleReport, questions } satisfies ReportData as unknown as Json;
+  return { ...exampleReport, questions, runDate } satisfies ReportData as unknown as Json;
 }
 
 export function makeExampleDashboard(now = new Date()): DashboardData {
@@ -42,7 +44,7 @@ export function makeExampleDashboard(now = new Date()): DashboardData {
     trigger,
     done_items: 30,
     total_items: 30,
-    summary: summaryWith(hits),
+    summary: summaryWith(hits, new Date(new Date(at(weeksAgo)).getTime() + 9 * 3600e3).toISOString().slice(0, 10)),
     is_mock: true,
   });
   const goal = (
@@ -88,7 +90,7 @@ export function makeExampleDashboard(now = new Date()): DashboardData {
       position: i + 1,
       card_type: cardTypes[i] ?? "site_info",
       title: c.title,
-      body: c.checks.join(" · "),
+      body: c.checks.join("\n"),
       evidence: c.evidence,
       draft: drafts[i] ?? null,
       status: i === 0 ? "done" : "auto",

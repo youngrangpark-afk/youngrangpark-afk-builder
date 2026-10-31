@@ -71,7 +71,7 @@ export function DashboardHome() {
         ) : (
           <>
             <Button asChild className="bg-brand hover:opacity-90">
-              <Link href="/app/dashboard/example">예시 대시보드 보기</Link>
+              <Link href="/app/reports/example">예시 대시보드 보기</Link>
             </Button>
             {access === "guest" ? (
               <Button variant="outline" onClick={() => setLoginOpen(true)}>

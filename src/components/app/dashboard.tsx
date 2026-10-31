@@ -18,12 +18,14 @@ import {
   Zap,
 } from "lucide-react";
 import { AliasNote } from "@/components/app/alias-note";
+import { ReportConditions, ReportDetails, ReportHero, ReportUpsell, SectionTitle } from "@/components/app/report-view";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { useDashboardAccess } from "@/lib/dashboard-access";
 import type { Database } from "@/lib/database.types";
 import type { ReportData } from "@/lib/report/types";
 import { getBrowserSupabase } from "@/lib/supabase/browser";
@@ -43,6 +45,9 @@ type CardRow = Pick<
   "id" | "position" | "card_type" | "title" | "body" | "evidence" | "draft" | "status"
 >;
 
+const RUN_COLUMNS = "id, created_at, status, trigger, done_items, total_items, summary, is_mock";
+const CARD_COLUMNS = "id, position, card_type, title, body, evidence, draft, status";
+
 const CARD_NAMES: Record<string, string> = {
   site_info: "사이트 정보 보강",
   faq_content: "FAQ 콘텐츠",
@@ -52,9 +57,14 @@ const CARD_NAMES: Record<string, string> = {
   press_release: "보도자료 배포",
 };
 
+const reportOf = (run: Run | undefined) => {
+  const r = run?.summary as unknown as ReportData | null | undefined;
+  return r?.questions ? r : null;
+};
+
 const hitsOf = (run: Run) => {
-  const r = run.summary as unknown as ReportData | null;
-  if (!r?.questions) return null;
+  const r = reportOf(run);
+  if (!r) return null;
   return {
     hits: r.questions.reduce((s, q) => s + q.hits.openai + q.hits.gemini, 0),
     total: r.questions.length * r.engines.length * r.repeats,
@@ -69,11 +79,22 @@ function daysLeft(due: string) {
   return Math.ceil((end - Date.now()) / 86400e3);
 }
 
-// 대시보드 (T-33, D-23): 이번 주 목표 · 액션 플랜(실행 초안) · 주간 추이. 기본은 자동, 표시는 선택.
-// example 이 있으면 예시 데이터로 그리고 저장하지 않는다 (/app/dashboard/example, D-27).
-export function Dashboard({ brands, example }: { brands: Brand[]; example?: () => DashboardData }) {
+// 대시보드 한 화면 (T-33 · D-23 · D-28): 브랜드 → 큰 결과 → 이번 주 목표 → 이번 주 할 일(초안) → 주간 추이 → 상세 분석 → 진단 조건.
+// 예시(/app/reports/example) · 진단이 끝난 화면(/app/reports/[번호]) · 내 대시보드(/app/dashboard)가 모두 이 화면을 쓴다.
+// focusRunId: 큰 결과 · 상세 분석을 이 진단 기준으로 (없으면 최근 진단). example: 예시 데이터로 그리고 저장하지 않는다.
+export function Dashboard({
+  brands,
+  example,
+  focusRunId,
+}: {
+  brands: Brand[];
+  example?: () => DashboardData;
+  focusRunId?: string;
+}) {
   const router = useRouter();
-  const reportHref = (id: string) => (example ? "/app/reports/example" : `/app/reports/${id}`);
+  const access = useDashboardAccess();
+  const member = !!example || access === "member"; // 매주 자동 재진단은 이용자만 (D-27)
+  const runHref = (id: string) => (example ? "#detail" : `/app/reports/${id}`);
   const [brandId, setBrandId] = useState(brands[0].id);
   const [brand, setBrand] = useState<Brand>(brands[0]);
   const [runs, setRuns] = useState<Run[] | null>(null);
@@ -100,31 +121,32 @@ export function Dashboard({ brands, example }: { brands: Brand[]; example?: () =
     const supabase = getBrowserSupabase();
     (async () => {
       const [{ data: r }, { data: g }] = await Promise.all([
-        supabase
-          .from("diagnosis_runs")
-          .select("id, created_at, status, trigger, done_items, total_items, summary, is_mock")
-          .eq("brand_id", brandId)
-          .order("created_at", { ascending: false })
-          .limit(8),
+        supabase.from("diagnosis_runs").select(RUN_COLUMNS).eq("brand_id", brandId).order("created_at", { ascending: false }).limit(8),
         supabase.from("weekly_goals").select("*").eq("brand_id", brandId).order("created_at", { ascending: false }).limit(8),
       ]);
+      const list = r ?? [];
+      // 오래된 진단을 열었으면 그 진단도 함께 읽는다
+      if (focusRunId && !list.some((x) => x.id === focusRunId)) {
+        const { data: f } = await supabase.from("diagnosis_runs").select(RUN_COLUMNS).eq("id", focusRunId).maybeSingle();
+        if (f) list.push(f);
+      }
+      // 이번 주 할 일 = 지금 목표의 카드. 목표가 없던 예전 진단이면 그 진단의 카드
       const current = g?.[0];
+      const fallbackRun = focusRunId ?? list.find((x) => x.status === "done")?.id;
       const { data: c } = current
-        ? await supabase
-            .from("task_cards")
-            .select("id, position, card_type, title, body, evidence, draft, status")
-            .eq("goal_id", current.id)
-            .order("position")
-        : { data: [] as CardRow[] };
+        ? await supabase.from("task_cards").select(CARD_COLUMNS).eq("goal_id", current.id).order("position")
+        : fallbackRun
+          ? await supabase.from("task_cards").select(CARD_COLUMNS).eq("run_id", fallbackRun).order("position")
+          : { data: [] as CardRow[] };
       if (stop) return;
-      setRuns(r ?? []);
+      setRuns(list);
       setGoals(g ?? []);
       setCards(c ?? []);
     })();
     return () => {
       stop = true;
     };
-  }, [brandId, reload, example]);
+  }, [brandId, reload, example, focusRunId]);
 
   // 진행 중인 진단이 있으면 10초마다 새로 읽는다 (처리는 서버 예약 실행이 한다)
   const running = runs?.find((r) => r.status === "running");
@@ -175,23 +197,26 @@ export function Dashboard({ brands, example }: { brands: Brand[]; example?: () =
 
   const goal = goals[0];
   const lastEvaluated = goals.find((g) => g.status !== "active");
-  const latestDone = runs.find((r) => r.status === "done");
-  const latest = latestDone ? hitsOf(latestDone) : null;
+  const doneRuns = runs.filter((r) => r.status === "done");
+  const focus = (focusRunId && runs.find((r) => r.id === focusRunId)) || doneRuns[0];
+  const report = reportOf(focus);
   const isMock = runs.some((r) => r.is_mock);
+  const olderFocus = !!focus && !!doneRuns[0] && focus.id !== doneRuns[0].id;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       {example && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card p-4">
           <p className="text-sm">
-            <strong>예시 대시보드예요.</strong> 이용 중인 브랜드는 매주 월요일 자동으로 진단하고 여기서 목표 · 할 일을 관리해요.
+            <strong>예시 화면이에요.</strong> 내 브랜드를 진단하면 이 화면에 실제 결과 · 이번 주 목표 · 할 일이 채워져요.
           </p>
-          <Button asChild size="sm" variant="outline">
-            <Link href="/app/reports/example">예시 리포트 보기</Link>
+          <Button asChild size="sm" className="bg-brand hover:opacity-90">
+            <Link href="/app">내 브랜드 무료 진단</Link>
           </Button>
         </div>
       )}
-      {/* 머리: 브랜드 · 자동 모드 · 다시 진단 */}
+
+      {/* ① 브랜드 · 다른 표기 · 자동 진단 */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <p className="text-sm text-muted-foreground">{brand.category}</p>
@@ -225,10 +250,16 @@ export function Dashboard({ brands, example }: { brands: Brand[]; example?: () =
               <Info className="size-3" /> 연습용 예시
             </Badge>
           )}
-          <label className="flex items-center gap-2 text-sm">
-            <Checkbox checked={brand.auto_mode} onCheckedChange={(v) => void setAuto(v === true)} />
-            매주 월요일 자동 진단
-          </label>
+          {member ? (
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox checked={brand.auto_mode} onCheckedChange={(v) => void setAuto(v === true)} />
+              매주 월요일 자동 진단
+            </label>
+          ) : (
+            access !== "loading" && (
+              <span className="text-xs text-muted-foreground">매주 자동 진단은 이용 중인 브랜드에 열려요</span>
+            )
+          )}
         </div>
       </div>
 
@@ -246,8 +277,31 @@ export function Dashboard({ brands, example }: { brands: Brand[]; example?: () =
         </Card>
       )}
 
-      {/* 이번 주 목표 */}
-      {goal ? (
+      {/* ② 큰 결과 */}
+      {report && focus ? (
+        <div className="space-y-2">
+          <ReportHero r={report} dateLabel={fmtDate(focus.created_at)} />
+          {olderFocus && (
+            <p className="text-center text-xs text-muted-foreground">
+              지난 진단을 보고 있어요 ·{" "}
+              <Link href={runHref(doneRuns[0].id)} className="underline underline-offset-4">
+                최근 진단 보기
+              </Link>
+            </p>
+          )}
+        </div>
+      ) : (
+        !running && (
+          <Card className="rounded-2xl">
+            <CardHeader>
+              <CardTitle className="text-lg">아직 끝난 진단이 없어요</CardTitle>
+            </CardHeader>
+          </Card>
+        )
+      )}
+
+      {/* ③ 이번 주 목표 */}
+      {goal && (
         <Card className="card-glow rounded-2xl ring-primary/40">
           <CardHeader className="gap-2">
             <div className="flex flex-wrap items-center gap-2">
@@ -264,8 +318,10 @@ export function Dashboard({ brands, example }: { brands: Brand[]; example?: () =
               <span className="text-base font-medium text-muted-foreground"> / {goal.total}번 중</span>
             </CardTitle>
             <CardDescription className="leading-relaxed">
-              ChatGPT · Gemini 에 같은 질문을 {goal.total}번 물었을 때 우리 브랜드가 나온 횟수예요. 다음 주 월요일 자동 진단으로
-              결과를 확인해요.
+              ChatGPT · Gemini 에 같은 질문을 {goal.total}번 물었을 때 우리 브랜드가 나온 횟수예요.{" "}
+              {member
+                ? "다음 주 월요일 자동 진단으로 결과를 확인해요."
+                : "다음 주에 다시 진단하면 목표를 이뤘는지 보여 드려요."}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -289,91 +345,104 @@ export function Dashboard({ brands, example }: { brands: Brand[]; example?: () =
             )}
           </CardContent>
         </Card>
-      ) : (
-        <Card className="rounded-2xl">
-          <CardHeader>
-            <CardTitle className="text-lg">첫 진단이 끝나면 이번 주 목표가 자동으로 만들어져요</CardTitle>
-          </CardHeader>
-        </Card>
       )}
 
-      {/* 액션 플랜 */}
+      {/* ④ 이번 주 할 일 (리포트 할 일 카드 + 액션 플랜, D-28) */}
       {cards.length > 0 && (
-        <section className="space-y-3">
-          <div className="space-y-1">
-            <h2 className="flex items-center gap-2 text-lg font-bold">
-              <Zap className="size-4 text-primary" /> 액션 플랜
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              실행 초안까지 자동으로 만들어 뒀어요. 완료 · 보류 표시는 선택이에요 — 표시하지 않아도 다음 주에 결과를 재요.
-            </p>
+        <section className="space-y-4">
+          <SectionTitle
+            eyebrow="이번 주 할 일"
+            title={
+              <span className="flex items-center gap-2">
+                <Zap className="size-5 text-primary" /> 이 3가지부터 하면 돼요
+              </span>
+            }
+          />
+          <p className="text-sm text-muted-foreground">
+            실행 초안까지 만들어 뒀어요. 완료 · 보류 표시는 선택이에요 — 표시하지 않아도 다음 진단에서 결과를 재요.
+          </p>
+          <div className="space-y-3">
+            {cards.map((c) => (
+              <ActionCard key={c.id} c={c} onStatus={setStatus} />
+            ))}
           </div>
-          {cards.map((c) => (
-            <ActionCard key={c.id} c={c} onStatus={setStatus} />
-          ))}
         </section>
       )}
 
-      {/* 주간 추이 */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-bold">주간 추이</h2>
+      {/* ⑤ 주간 추이 */}
+      <section className="space-y-4">
+        <SectionTitle eyebrow="주간 추이" title="진단할 때마다 얼마나 나왔나" />
         <Card className="rounded-2xl">
           <CardContent className="divide-y divide-border">
-            {runs.filter((r) => r.status === "done").length === 0 && (
-              <p className="py-2 text-sm text-muted-foreground">아직 끝난 진단이 없어요.</p>
-            )}
-            {runs
-              .filter((r) => r.status === "done")
-              .map((r) => {
-                const h = hitsOf(r);
-                const g = goals.find((x) => x.result_run_id === r.id);
-                return (
-                  <div key={r.id} className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:gap-4">
-                    <div className="flex min-w-0 items-center gap-2 sm:w-48">
-                      <span className="text-sm font-medium">{fmtDate(r.created_at)}</span>
-                      <Badge variant="outline" className="rounded-full text-[0.7rem]">
-                        {r.trigger === "weekly" ? "자동" : "직접"}
+            {doneRuns.length === 0 && <p className="py-2 text-sm text-muted-foreground">아직 끝난 진단이 없어요.</p>}
+            {doneRuns.map((r) => {
+              const h = hitsOf(r);
+              const g = goals.find((x) => x.result_run_id === r.id);
+              return (
+                <div
+                  key={r.id}
+                  className={`flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:gap-4 ${r.id === focus?.id ? "font-semibold" : ""}`}
+                >
+                  <div className="flex min-w-0 items-center gap-2 sm:w-48">
+                    <span className="text-sm">{fmtDate(r.created_at)}</span>
+                    <Badge variant="outline" className="rounded-full text-[0.7rem] font-normal">
+                      {r.trigger === "weekly" ? "자동" : "직접"}
+                    </Badge>
+                  </div>
+                  <div className="flex flex-1 items-center gap-3">
+                    <Progress value={h ? Math.round((h.hits / h.total) * 100) : 0} className="flex-1" />
+                    <span className="w-14 shrink-0 text-right text-sm tabular-nums text-muted-foreground">
+                      {h ? `${h.hits}/${h.total}` : "-"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 sm:w-36 sm:justify-end">
+                    {g && (
+                      <Badge variant={g.status === "achieved" ? "default" : "secondary"} className="rounded-full text-[0.7rem]">
+                        목표 {g.status === "achieved" ? "달성" : "미달"}
                       </Badge>
-                    </div>
-                    <div className="flex flex-1 items-center gap-3">
-                      <Progress value={h ? Math.round((h.hits / h.total) * 100) : 0} className="flex-1" />
-                      <span className="w-14 shrink-0 text-right text-sm tabular-nums text-muted-foreground">
-                        {h ? `${h.hits}/${h.total}` : "-"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 sm:w-36 sm:justify-end">
-                      {g && (
-                        <Badge variant={g.status === "achieved" ? "default" : "secondary"} className="rounded-full text-[0.7rem]">
-                          목표 {g.status === "achieved" ? "달성" : "미달"}
-                        </Badge>
-                      )}
-                      <Link href={reportHref(r.id)} className="text-xs text-muted-foreground underline-offset-4 hover:underline">
+                    )}
+                    {r.id === focus?.id ? (
+                      <span className="text-xs text-muted-foreground">보는 중</span>
+                    ) : (
+                      <Link href={runHref(r.id)} className="text-xs font-normal text-muted-foreground underline-offset-4 hover:underline">
                         상세
                       </Link>
-                    </div>
+                    )}
                   </div>
-                );
-              })}
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
       </section>
 
+      {/* ⑥ 상세 분석 · ⑦ 진단 조건 */}
+      {report && (
+        <div id="detail" className="space-y-10 scroll-mt-6">
+          <ReportDetails r={report} />
+          <ReportUpsell />
+          <ReportConditions r={report} />
+        </div>
+      )}
+
       {/* 다른 행동 (선택) */}
-      <div className="flex flex-wrap gap-2">
-        {latestDone && (
-          <Button asChild variant="outline">
-            <Link href={reportHref(latestDone.id)}>
-              <FileText /> 최근 상세 리포트{latest ? ` (${latest.hits}/${latest.total})` : ""}
-            </Link>
+      <div className="flex flex-wrap gap-2 border-t pt-6">
+        {!example && (
+          <Button variant="outline" disabled={busy || !!running} onClick={() => void runNow()}>
+            {busy ? <Loader2 className="animate-spin" /> : <RotateCcw />} 지금 다시 진단
           </Button>
         )}
-        <Button variant="ghost" disabled={busy || !!running} onClick={() => void runNow()}>
-          {busy ? <Loader2 className="animate-spin" /> : <RotateCcw />} 지금 다시 진단
-        </Button>
         <Button asChild variant="ghost">
           <Link href="/app">{example ? "내 브랜드 무료 진단 해보기" : "다른 브랜드 진단"}</Link>
         </Button>
       </div>
+      <p className="text-center text-xs text-muted-foreground">
+        {example
+          ? "GEO 스나이퍼 · 연습용 예시 화면 · 실제 브랜드 · 사이트가 아닌 가짜 데이터예요"
+          : isMock
+            ? "GEO 스나이퍼 · 연습용 예시 답변으로 만든 결과예요"
+            : "GEO 스나이퍼"}
+      </p>
     </div>
   );
 }
@@ -381,8 +450,9 @@ export function Dashboard({ brands, example }: { brands: Brand[]; example?: () =
 function ActionCard({ c, onStatus }: { c: CardRow; onStatus: (id: string, s: "auto" | "done" | "skipped") => void }) {
   const [open, setOpen] = useState(false);
   const statusLabel = c.status === "done" ? "완료" : c.status === "skipped" ? "보류" : "자동 진행";
+  const checks = c.body.split("\n").filter(Boolean);
   return (
-    <Card className={`rounded-2xl ${c.status === "skipped" ? "opacity-60" : ""}`}>
+    <Card className={`rounded-2xl ${c.status === "skipped" ? "opacity-60" : ""} ${c.position === 1 ? "card-glow ring-primary/40" : ""}`}>
       <CardHeader className="gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary" className="gap-1.5 rounded-full">
@@ -394,11 +464,21 @@ function ActionCard({ c, onStatus }: { c: CardRow; onStatus: (id: string, s: "au
           </Badge>
         </div>
         <CardTitle className="text-lg leading-snug">{c.title}</CardTitle>
-        <CardDescription className="text-sm">
-          <span className="font-semibold text-foreground">근거</span> · {c.evidence}
-        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
+        {checks.length > 0 && (
+          <ul className="space-y-1.5">
+            {checks.map((t) => (
+              <li key={t} className="flex items-start gap-2 text-sm text-muted-foreground">
+                <CircleCheck className="mt-0.5 size-4 shrink-0 text-primary" />
+                {t}
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="text-xs text-muted-foreground">
+          <span className="font-semibold text-foreground">근거</span> · {c.evidence}
+        </p>
         {c.draft && (
           <>
             <Button size="sm" variant="outline" onClick={() => setOpen((v) => !v)}>

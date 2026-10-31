@@ -9,10 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { AppHeader } from "@/components/app/app-header";
-import { DashboardBanner } from "@/components/app/dashboard-banner";
-import { ReportView } from "@/components/app/report-view";
+import { Dashboard, type Brand } from "@/components/app/dashboard";
 import { PICKS_STORE } from "@/lib/picks";
-import type { ReportData } from "@/lib/report/types";
+import { getBrowserSupabase } from "@/lib/supabase/browser";
 
 type ProgressState = { status: string; total: number; done: number; failed: number; isMock: boolean };
 
@@ -47,13 +46,37 @@ export function PreparingCard() {
   );
 }
 
-// `/app/reports/[번호]` 진행 화면 (T-11) → 끝나면 리포트 한 장 (T-15 ~ T-17).
+// 진단이 끝난 뒤: 그 진단의 브랜드를 읽어 대시보드 한 화면을 이 진단 기준으로 그린다 (D-28)
+function RunBoard({ runId }: { runId: string }) {
+  const [brand, setBrand] = useState<Brand | null>(null);
+  useEffect(() => {
+    const supabase = getBrowserSupabase();
+    let stop = false;
+    (async () => {
+      const { data: run } = await supabase.from("diagnosis_runs").select("brand_id").eq("id", runId).maybeSingle();
+      if (!run) return;
+      const { data: b } = await supabase
+        .from("brands")
+        .select("id, name, category, auto_mode, aliases, aliases_checked_at")
+        .eq("id", run.brand_id)
+        .maybeSingle();
+      if (!stop && b) setBrand(b);
+    })();
+    return () => {
+      stop = true;
+    };
+  }, [runId]);
+  if (!brand) return <Card className="h-72 animate-pulse rounded-2xl" aria-label="불러오는 중" />;
+  return <Dashboard brands={[brand]} focusRunId={runId} />;
+}
+
+// `/app/reports/[번호]` 진행 화면 (T-11) → 끝나면 대시보드 한 화면 (D-28).
 // 열려 있는 동안 서버에 "한 걸음"을 계속 부탁하며 진행률을 보여 준다.
 export function RunProgress() {
   const { id } = useParams<{ id: string }>();
   const [state, setState] = useState<ProgressState | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [report, setReport] = useState<ReportData | null>(null);
+  const [ready, setReady] = useState(false); // 리포트까지 저장됐나
 
   // 진단이 시작됐으니 브라우저에 남은 입력 복사본은 지운다 (D-16)
   useEffect(() => {
@@ -87,7 +110,7 @@ export function RunProgress() {
         else if (data.status === "done") {
           const r = await fetch(`/api/diagnosis/${id}/report`);
           const rd = await r.json();
-          if (!stop && r.ok && rd.report) setReport(rd.report as ReportData);
+          if (!stop && r.ok && rd.report) setReady(true);
         }
       } catch {
         if (!stop) {
@@ -103,9 +126,15 @@ export function RunProgress() {
     };
   }, [id]);
 
-  if (report)
+  // 끝나면 대시보드 한 화면으로, 이 진단 기준 (D-28)
+  if (ready)
     return (
-      <ReportView r={report} banner={<DashboardBanner />} />
+      <main className="page-glow flex-1 pb-16">
+        <AppHeader step="진단 결과" />
+        <div className="mx-auto max-w-4xl px-4 pt-10 md:pt-14">
+          <RunBoard runId={id} />
+        </div>
+      </main>
     );
 
   if (error && !state) {
