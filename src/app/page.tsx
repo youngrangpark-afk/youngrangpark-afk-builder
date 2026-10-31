@@ -50,7 +50,7 @@ const differences = [
   <>결과는 정해진 질문과 검색 조건에서 받은 답이라, 그 조건을 리포트에 함께 적어 드려요.</>,
 ];
 
-const keywords = ["GEO", "AI 검색 노출", "1인 창업", "브랜드 마케팅"];
+const keywords = ["GEO", "AI 검색 노출", "뷰티 브랜드", "브랜드 마케팅"];
 
 function ExampleReportButton() {
   return (
@@ -83,7 +83,7 @@ export default function Home() {
           <div className="mx-auto max-w-3xl space-y-8 pt-16 text-center md:pt-24">
             <Badge variant="outline" className="gap-1.5 rounded-full border-primary/50 px-3 py-1">
               <CircleDot className="size-3 text-primary" />
-              검증 중인 서비스 · 1인 창업자용 GEO
+              검증 중인 서비스 · 뷰티 브랜드용 GEO
             </Badge>
             <h1 className="text-4xl leading-tight font-bold tracking-tight md:text-6xl">
               브랜드명만 넣으면
@@ -92,10 +92,10 @@ export default function Home() {
             </h1>
             <div className="mx-auto max-w-2xl space-y-2 text-base leading-relaxed text-muted-foreground md:text-lg">
               <p>
-                ChatGPT · Gemini 가 우리 브랜드를 얼마나 자주 말하는지, 그리고 이번 주에 할 일 3가지를 한 장으로
-                보여 드려요.
+                ChatGPT · Gemini 가 우리 브랜드를 얼마나 자주 말하는지 진단하고, AI 검색으로 손님을 더 데려오려면
+                이번 주에 무엇을 하면 되는지까지 알려 드려요.
               </p>
-              <p>마케터 없이 혼자 브랜드를 키우는 분을 위해 만들고 있어요.</p>
+              <p>뷰티 브랜드를 운영하는 대표님과 마케팅 담당자를 위해 만들고 있어요.</p>
             </div>
             <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
               <ExampleReportButton />
