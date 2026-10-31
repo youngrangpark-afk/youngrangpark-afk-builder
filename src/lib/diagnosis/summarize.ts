@@ -117,7 +117,7 @@ export function buildReport(input: {
     repeats: input.repeats,
     searchMode: input.isMock
       ? "웹 검색 켬 조건 (연습용 예시 답변)"
-      : "웹 검색 켬 (ChatGPT 웹 검색 · Gemini Google 검색 그라운딩)",
+      : `웹 검색 켬 (${engines.map((e) => (e === "openai" ? "ChatGPT 웹 검색" : "Gemini Google 검색")).join(" · ")})`,
     questions,
     brands,
     citations: citationList,

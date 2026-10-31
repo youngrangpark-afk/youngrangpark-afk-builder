@@ -1,8 +1,10 @@
 import "server-only";
+import { ApiError, GoogleGenAI } from "@google/genai";
 import type { Json } from "@/lib/database.types";
 
 // ★ 엔진(ChatGPT · Gemini) 호출을 실제 키로 바꿀 지점은 이 파일 하나다 (T-12 · T-13, D-01 웹 검색 켬).
-// 키가 없으면 연습용 예시 답변을 돌려준다.
+// D-30: Gemini 는 키가 있으면 실제(Google 검색 그라운딩, 무료 등급). ChatGPT 는 아직 연결 전.
+// 실제로 물을 수 있는 엔진이 하나도 없을 때만 연습용 예시 답변을 쓴다 (가짜와 실제 숫자를 섞지 않는다).
 
 export type EngineName = "openai" | "gemini";
 
@@ -21,13 +23,60 @@ export type EngineAnswer = {
   requestMeta: Json;
 };
 
+export const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+
+// 실제로 물을 수 있는 엔진. ChatGPT 는 실제 호출을 만들면 여기에 추가한다.
+export function liveEngines(): EngineName[] {
+  return process.env.GEMINI_API_KEY ? ["gemini"] : [];
+}
+
 export function enginesAreLive(): boolean {
-  return !!(process.env.OPENAI_API_KEY && process.env.GEMINI_API_KEY);
+  return liveEngines().length > 0;
 }
 
 export async function askEngine(input: EngineInput): Promise<EngineAnswer> {
-  // 실제 연결 전까지는 키가 있어도 예시로 답한다 (상한 · 비용 확인 전).
+  if (input.engine === "gemini" && process.env.GEMINI_API_KEY) return askGemini(input.question);
   return mockAnswer(input);
+}
+
+// 무료 등급은 분당 요청 수가 적어, 너무 많다고(429) 하면 잠깐 쉬었다 다시 묻는다
+export async function withGeminiRetry<T>(call: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await call();
+    } catch (e) {
+      if (!(e instanceof ApiError) || e.status !== 429 || attempt >= 2) throw e;
+      await new Promise((r) => setTimeout(r, 8000 * (attempt + 1)));
+    }
+  }
+}
+
+// 그라운딩 출처의 주소는 구글 중계 주소라, 제목에 담긴 도메인(예: blog.naver.com)을 쓴다
+const DOMAIN_LIKE = /^(?:[a-z0-9-]+\.)+[a-z]{2,}$/i;
+
+async function askGemini(question: string): Promise<EngineAnswer> {
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  const res = await withGeminiRetry(() =>
+    ai.models.generateContent({
+      model: GEMINI_MODEL,
+      contents: question,
+      config: { tools: [{ googleSearch: {} }] },
+    }),
+  );
+  const meta = res.candidates?.[0]?.groundingMetadata;
+  const citations = (meta?.groundingChunks ?? [])
+    .map((c) => c.web)
+    .filter((w): w is NonNullable<typeof w> => !!w?.uri)
+    .map((w) => {
+      const title = w.title?.trim() ?? "";
+      return { url: DOMAIN_LIKE.test(title) ? `https://${title.toLowerCase()}/` : w.uri!, title: title || null, redirect: w.uri! };
+    });
+  return {
+    model: res.modelVersion ?? GEMINI_MODEL,
+    answerText: res.text ?? "",
+    rawResponse: { citations, searchQueries: meta?.webSearchQueries ?? [] } as Json,
+    requestMeta: { search: "google_search", language: "ko" },
+  };
 }
 
 // 연습용 예시 답변: 가짜 경쟁 브랜드와 예시 출처로 그럴듯한 한 단락을 만든다. 실제 AI 답변이 아니다.

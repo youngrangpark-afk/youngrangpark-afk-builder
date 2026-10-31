@@ -64,6 +64,13 @@ function findMentions(text: string, { selfName, selfAliases = [], benchmarks }: 
     .map((f, i) => ({ brandName: f.name, role: f.role, rank: i + 1, description: sentenceAround(text, f.at) }));
 }
 
+// 이름(띄어쓰기 · 대소문자 무시)이 처음 나온 문장 — 실제 답변에서 뽑은 경쟁 브랜드 설명에 쓴다 (D-30)
+export function mentionSentence(text: string, name: string): string | null {
+  const flat = squash(text);
+  const at = flat.out.indexOf(nameKey(name));
+  return at >= 0 ? sentenceAround(text, flat.pos[at]) : null;
+}
+
 // 브랜드가 나온 문장 하나 (앞뒤 마침표 · 줄바꿈 기준)
 function sentenceAround(text: string, at: number): string | null {
   const dot = text.lastIndexOf(". ", at);

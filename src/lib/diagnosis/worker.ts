@@ -1,9 +1,10 @@
 import "server-only";
 import type { Json } from "@/lib/database.types";
 import { findBrandAliases } from "@/lib/ai/brand-aliases";
-import { analyzeAnswer } from "@/lib/diagnosis/analyze";
+import { analyzeAnswer, mentionSentence, nameKey } from "@/lib/diagnosis/analyze";
 import { makeDraft } from "@/lib/diagnosis/drafts";
-import { askEngine, enginesAreLive, type EngineName } from "@/lib/diagnosis/engine";
+import { extractCompetitorBrands } from "@/lib/ai/extract-brands";
+import { askEngine, enginesAreLive, liveEngines, type EngineName } from "@/lib/diagnosis/engine";
 import { nextMonday, nextTarget } from "@/lib/diagnosis/goals";
 import { buildReport } from "@/lib/diagnosis/summarize";
 import { getAdminSupabase } from "@/lib/supabase/admin";
@@ -12,7 +13,8 @@ import { getAdminSupabase } from "@/lib/supabase/admin";
 
 type Admin = ReturnType<typeof getAdminSupabase>;
 
-const ENGINES = ["openai", "gemini"] as const;
+// 실제로 물을 수 있는 엔진만 쓴다. 하나도 없으면 두 엔진 모두 연습용 예시 (D-30)
+const enginesForRun = (): EngineName[] => (enginesAreLive() ? liveEngines() : ["openai", "gemini"]);
 const REPEATS = 3;
 export const DAILY_LIMIT = Number(process.env.DIAGNOSIS_DAILY_LIMIT ?? 50);
 export const PER_USER_LIMIT = Number(process.env.DIAGNOSIS_PER_USER_LIMIT ?? 20);
@@ -56,6 +58,7 @@ export async function createRun(
       .eq("id", brand.id);
   }
 
+  const engines = enginesForRun();
   const { data: run, error } = await admin
     .from("diagnosis_runs")
     .insert({
@@ -64,8 +67,9 @@ export async function createRun(
       brand_key: brand.site_domain || brand.name.toLowerCase().replace(/\s+/g, ""),
       status: "running",
       trigger: args.trigger,
+      engines,
       repeats: REPEATS,
-      total_items: questions.length * ENGINES.length * REPEATS,
+      total_items: questions.length * engines.length * REPEATS,
       is_mock: !enginesAreLive(),
       started_at: new Date().toISOString(),
     })
@@ -74,7 +78,7 @@ export async function createRun(
   if (error || !run) return { error: "진단을 만들지 못했어요.", status: 500 };
 
   const items = questions.flatMap((q) =>
-    ENGINES.flatMap((engine) =>
+    engines.flatMap((engine) =>
       Array.from({ length: REPEATS }, (_, r) => ({
         user_id: args.userId,
         run_id: run.id,
@@ -221,8 +225,10 @@ export async function processRun(admin: Admin, runId: string, batch: number): Pr
 async function finalizeRun(
   admin: Admin,
   run: { id: string; user_id: string; brand_id: string; is_mock: boolean; created_at: string; repeats: number },
-  brand: { name: string; category: string; site_domain: string | null; aliases: string[] },
+  brand: { name: string; category: string; site_domain: string | null; aliases: string[]; benchmark_brands: string[] },
 ) {
+  // 실제 답변이면 경쟁 브랜드를 한 번에 뽑아 넣는다 (D-30, Gemini 무료 1번)
+  if (!run.is_mock) await addCompetitorMentions(admin, run, brand);
   const [{ data: allItems }, { data: answers }, { data: mentions }, { data: citations }] = await Promise.all([
     admin.from("run_items").select("id, question_position, question_text, question_strategy, engine").eq("run_id", run.id),
     admin.from("engine_answers").select("id, item_id, answer_text").eq("run_id", run.id),
@@ -298,4 +304,42 @@ async function finalizeRun(
     })),
   );
   await admin.from("diagnosis_runs").update({ summary: report as unknown as Json }).eq("id", run.id);
+}
+
+// 실제 답변 속 경쟁 브랜드 (T-14, D-30): 답변 전체를 Gemini 에 한 번 보내 브랜드 이름을 받아 mentions 에 넣는다.
+// 실패해도 진단은 끝난다 (경쟁사 칸만 빈다).
+async function addCompetitorMentions(
+  admin: Admin,
+  run: { id: string; user_id: string },
+  brand: { name: string; aliases: string[]; benchmark_brands: string[] },
+) {
+  const { data: answers } = await admin.from("engine_answers").select("id, answer_text").eq("run_id", run.id);
+  if (!answers?.length) return;
+  const known = [brand.name, ...brand.aliases, ...brand.benchmark_brands];
+  const knownKeys = new Set(known.map(nameKey).filter(Boolean));
+  let found: string[][];
+  try {
+    found = await extractCompetitorBrands(
+      answers.map((a) => a.answer_text),
+      known,
+    );
+  } catch (e) {
+    console.error("extract-brands: 경쟁 브랜드 뽑기 실패", (e as Error).message.slice(0, 120));
+    return;
+  }
+  const rows = answers.flatMap((a, i) =>
+    found[i]
+      .filter((b) => !knownKeys.has(nameKey(b)))
+      .map((b, j) => ({
+        user_id: run.user_id,
+        answer_id: a.id,
+        run_id: run.id,
+        brand_name: b,
+        role: "competitor",
+        rank: 100 + j,
+        description: mentionSentence(a.answer_text, b),
+      })),
+  );
+  await admin.from("mentions").delete().eq("run_id", run.id).eq("role", "competitor");
+  if (rows.length) await admin.from("mentions").insert(rows);
 }

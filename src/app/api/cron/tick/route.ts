@@ -1,3 +1,4 @@
+import { enginesAreLive } from "@/lib/diagnosis/engine";
 import { createRun, processRun } from "@/lib/diagnosis/worker";
 import { thisMondayNineKst } from "@/lib/diagnosis/goals";
 import { getAdminSupabase } from "@/lib/supabase/admin";
@@ -6,8 +7,9 @@ import { getAdminSupabase } from "@/lib/supabase/admin";
 // ① 진행 중인 진단을 처리 (창을 닫아도 계속) ② 월요일 09:00(KST) 이후 대시보드 이용자의 자동 모드 브랜드에 주간 재진단을 만든다.
 export const maxDuration = 60;
 
-const RUNS_PER_TICK = 5;
-const BATCH = 12;
+// 실제 AI 는 한 번에 몇 초씩 걸리고 무료 등급은 분당 요청 수가 적어 줄인다 (D-30)
+const RUNS_PER_TICK = enginesAreLive() ? 2 : 5;
+const BATCH = enginesAreLive() ? 4 : 12;
 
 export async function POST(request: Request) {
   const secret = process.env.CRON_SECRET;

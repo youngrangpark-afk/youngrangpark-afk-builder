@@ -190,7 +190,9 @@ export function RunProgress() {
             )}
           </CardTitle>
           <CardDescription className="leading-relaxed">
-            질문 5개 × AI 2곳(ChatGPT · Gemini) × 3번 = 모두 {state.total}번 물어봐요.
+            {state.isMock
+              ? `질문 5개 × AI 2곳(ChatGPT · Gemini) × 3번 = 모두 ${state.total}번 물어봐요.`
+              : `질문 5개를 실제 AI 에 3번씩, 모두 ${state.total}번 물어봐요.`}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
