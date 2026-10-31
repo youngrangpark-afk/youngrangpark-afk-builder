@@ -28,6 +28,25 @@ function shell(children: React.ReactNode) {
   );
 }
 
+// 진행률을 받기 전 잠깐 보이는 카드 — 빈 화면 대신 무슨 일이 일어나는지 알려 준다
+export function PreparingCard() {
+  return (
+    <Card className="rounded-2xl" aria-live="polite">
+      <CardHeader className="gap-3">
+        <CardTitle className="flex items-center gap-2 text-2xl font-bold">
+          <Loader2 className="size-6 animate-spin text-primary" /> 진단을 준비하고 있어요
+        </CardTitle>
+        <CardDescription className="leading-relaxed">
+          질문 5개를 ChatGPT · Gemini 에 보낼 준비를 하고 있어요. 곧 진행률이 보여요.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Progress value={0} />
+      </CardContent>
+    </Card>
+  );
+}
+
 // `/app/reports/[번호]` 진행 화면 (T-11) → 끝나면 리포트 한 장 (T-15 ~ T-17).
 // 열려 있는 동안 서버에 "한 걸음"을 계속 부탁하며 진행률을 보여 준다.
 export function RunProgress() {
@@ -49,9 +68,13 @@ export function RunProgress() {
   useEffect(() => {
     let stop = false;
     let timer: ReturnType<typeof setTimeout>;
+    // 첫 번째는 진행률만 바로 읽어 화면을 띄우고(GET), 그다음부터 한 걸음씩 처리(POST)
+    let first = true;
     async function tick() {
       try {
-        const res = await fetch(`/api/diagnosis/${id}/step`, { method: "POST" });
+        const res = await fetch(`/api/diagnosis/${id}/step`, { method: first ? "GET" : "POST" });
+        const wasFirst = first;
+        first = false;
         const data = await res.json();
         if (stop) return;
         if (!res.ok) {
@@ -60,7 +83,7 @@ export function RunProgress() {
         }
         setError(null);
         setState(data as ProgressState);
-        if (data.status === "running" || data.status === "queued") timer = setTimeout(tick, POLL_MS);
+        if (data.status === "running" || data.status === "queued") timer = setTimeout(tick, wasFirst ? 0 : POLL_MS);
         else if (data.status === "done") {
           const r = await fetch(`/api/diagnosis/${id}/report`);
           const rd = await r.json();
@@ -102,9 +125,7 @@ export function RunProgress() {
     );
   }
 
-  if (!state) {
-    return shell(<Card className="h-56 animate-pulse rounded-2xl" aria-label="불러오는 중" />);
-  }
+  if (!state) return shell(<PreparingCard />);
 
   const finished = state.done + state.failed;
   const pct = state.total ? Math.round((finished / state.total) * 100) : 0;

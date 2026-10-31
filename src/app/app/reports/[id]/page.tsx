@@ -1,8 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { AppHeader } from "@/components/app/app-header";
-import { RunProgress } from "@/components/app/run-progress";
-import { Card } from "@/components/ui/card";
+import { PreparingCard, RunProgress } from "@/components/app/run-progress";
 
 export const metadata: Metadata = {
   title: "진단 리포트 — GEO 스나이퍼",
@@ -18,7 +17,7 @@ export default function ReportPage() {
         <main className="page-glow flex-1 pb-16">
           <AppHeader step="진단" />
           <div className="mx-auto max-w-xl px-4 pt-10 md:pt-16">
-            <Card className="h-56 animate-pulse rounded-2xl" aria-label="불러오는 중" />
+            <PreparingCard />
           </div>
         </main>
       }
