@@ -12,35 +12,12 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.18"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       brands: {
         Row: {
+          aliases: string[]
+          aliases_checked_at: string | null
           auto_mode: boolean
           benchmark_brands: string[]
           category: string
@@ -52,6 +29,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          aliases?: string[]
+          aliases_checked_at?: string | null
           auto_mode?: boolean
           benchmark_brands?: string[]
           category: string
@@ -63,6 +42,8 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          aliases?: string[]
+          aliases_checked_at?: string | null
           auto_mode?: boolean
           benchmark_brands?: string[]
           category?: string
@@ -880,9 +861,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },

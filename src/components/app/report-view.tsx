@@ -26,6 +26,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { ReportActions } from "@/components/report-actions";
+import { AliasNote } from "@/components/app/alias-note";
 import { engineLabel, sourceTypeLabel, type ReportData, type Strategy } from "@/lib/report/types";
 
 const pct = (n: number, d: number) => Math.round((n / d) * 100);
@@ -94,6 +95,7 @@ export function ReportView({ r, footnote, banner }: { r: ReportData; footnote?: 
               모두 {totalAsks}번 물어본 결과예요 (노출 빈도 {pct(selfHits, totalAsks)}%). 공략형 질문 {quickWins.length}개 중 {quickWinHit}개에서 이미
               이름이 나왔어요.
             </p>
+            {r.brand.aliases && <AliasNote name={r.brand.name} aliases={r.brand.aliases} className="justify-center" />}
           </div>
         </header>
 

@@ -18,7 +18,8 @@ export const sourceTypeLabel: Record<SourceType, string> = {
 
 export type ReportData = {
   isMock: boolean;
-  brand: { name: string; category: string; domain: string };
+  // aliases: 입력한 이름 외에 함께 센 표기 (D-26). 예전 리포트에는 없다
+  brand: { name: string; category: string; domain: string; aliases?: string[] };
   runDate: string; // YYYY-MM-DD (한국 시간)
   engines: Engine[];
   repeats: number;

@@ -31,7 +31,7 @@ export function buildReport(input: {
   isMock: boolean;
   createdAt: string;
   repeats: number;
-  brand: { name: string; category: string; site_domain: string | null };
+  brand: { name: string; category: string; site_domain: string | null; aliases: string[] };
   items: Item[];
   answers: Answer[];
   mentions: MentionRow[];
@@ -106,7 +106,12 @@ export function buildReport(input: {
   const cards = pickCards({ questions, brands, citations: citationList, repeats: input.repeats, engines: engines.length });
   const report: ReportData = {
     isMock: input.isMock,
-    brand: { name: input.brand.name, category: input.brand.category, domain: input.brand.site_domain ?? "" },
+    brand: {
+      name: input.brand.name,
+      category: input.brand.category,
+      domain: input.brand.site_domain ?? "",
+      aliases: input.brand.aliases,
+    },
     runDate: new Date(new Date(input.createdAt).getTime() + 9 * 3600e3).toISOString().slice(0, 10),
     engines,
     repeats: input.repeats,

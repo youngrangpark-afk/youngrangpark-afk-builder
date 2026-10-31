@@ -256,6 +256,15 @@ card_types ── task_cards.card_type      question_templates ── questions.
 | task_cards.status | ✗ | **이 칸만 수정**(완료 · 보류 표시) | ✗ | 전부 |
 | brands.auto_mode | ✗ | 수정 (brands 수정 규칙 그대로) | ✗ | 전부 |
 
+## 8-3. 브랜드 다른 표기 (2026-10-31, D-26)
+| 바뀌는 곳 | 칸 | 설명 |
+|---|---|---|
+| `brands` | `aliases text[] 필수 기본 {}` (최대 8개, 각 1~50자) | 입력한 이름 말고 같은 브랜드로 셀 표기 (예: Hotel Dawson, hoteldawson). 서버가 진단 시작 때 자동으로 채움 |
+| `brands` | `aliases_checked_at timestamptz` | 자동 찾기를 마친 때. 비어 있으면 다음 진단 때 다시 찾는다 |
+
+누가 읽고 쓰나: brands 규칙 그대로 — 본인 보기 · 수정(잘못 찾은 표기 빼기), 서버 전부. 다른 사용자 ✗.
+외부 전송: 브랜드명 · 카테고리 · 사이트 주소만 Anthropic(Claude)에 보낸다. 개인정보 없음.
+
 서버 전용 기능 · 예약 실행:
 - `set_cron_secret(text)` — 예약 실행이 우리 서버를 부를 때 쓰는 비밀값을 Supabase Vault 에 저장 (service_role 만). 비밀값 자체는 SQL 파일에 쓰지 않는다.
 - pg_cron + pg_net: **1분마다** `/api/cron/tick` 호출 → 진행 중인 진단을 처리하고, 월요일 09:00(KST) 이후에는 자동 모드 브랜드의 주간 재진단을 만든다. 호출에는 `CRON_SECRET` 이 있어야 한다.

@@ -9,7 +9,8 @@ import type { BrandRole, SourceType } from "@/lib/report/types";
 export type Mention = { brandName: string; role: BrandRole; rank: number; description: string | null };
 export type Citation = { url: string; domain: string; title: string | null; sourceType: SourceType };
 
-type Context = { selfName: string; selfDomain: string | null; benchmarks: string[] };
+// selfAliases: 같은 브랜드로 셀 다른 표기 (D-26) — 어느 표기로 나와도 selfName 으로 기록한다
+type Context = { selfName: string; selfAliases?: string[]; selfDomain: string | null; benchmarks: string[] };
 
 export function analyzeAnswer(answerText: string, raw: Json | null, ctx: Context) {
   return { mentions: findMentions(answerText, ctx), citations: findCitations(answerText, raw, ctx) };
@@ -29,20 +30,29 @@ function squash(s: string) {
   return { out, pos };
 }
 
-function findMentions(text: string, { selfName, benchmarks }: Context): Mention[] {
+// 두 표기가 같은 이름인지 비교할 때 쓰는 열쇠 (brand-aliases.ts 와 같은 규칙)
+export const nameKey = (s: string) => squash(s).out;
+
+function findMentions(text: string, { selfName, selfAliases = [], benchmarks }: Context): Mention[] {
   const flat = squash(text);
   const found: { key: string; name: string; role: BrandRole; at: number }[] = [];
-  const add = (name: string, role: BrandRole) => {
-    const key = squash(name).out;
-    const at = key ? flat.out.indexOf(key) : -1;
-    if (at >= 0 && !found.some((f) => f.key === key)) found.push({ key, name, role, at: flat.pos[at] });
+  // spellings 중 답변에 가장 먼저 나온 표기의 위치로 name 을 한 번만 기록한다
+  const add = (name: string, role: BrandRole, spellings: string[] = [name]) => {
+    const key = nameKey(name);
+    if (!key || found.some((f) => f.key === key)) return;
+    const hits = spellings
+      .map(nameKey)
+      .filter(Boolean)
+      .map((k) => flat.out.indexOf(k))
+      .filter((at) => at >= 0);
+    if (hits.length) found.push({ key, name, role, at: flat.pos[Math.min(...hits)] });
   };
-  add(selfName.trim(), "self");
+  add(selfName.trim(), "self", [selfName, ...selfAliases]);
   for (const b of benchmarks) add(b.trim(), "benchmark");
   // 경쟁사 자동 추출 (D-02) — 연습용 예시 답변의 "브랜드 A/B/C" 표기. 실제 연결 때 Claude 추출로 바뀐다.
   // 내 브랜드 · 기준 브랜드 이름 안에 든 글자(예: "기준 브랜드 D" 속 "브랜드 D")는 경쟁사로 세지 않는다.
   const rest = text.split("");
-  for (const key of [selfName, ...benchmarks].map((n) => squash(n).out).filter(Boolean)) {
+  for (const key of [selfName, ...selfAliases, ...benchmarks].map(nameKey).filter(Boolean)) {
     for (let at = flat.out.indexOf(key); at >= 0; at = flat.out.indexOf(key, at + 1)) {
       rest.fill(" ", flat.pos[at], flat.pos[at + key.length - 1] + 1);
     }

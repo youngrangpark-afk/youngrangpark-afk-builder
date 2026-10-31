@@ -17,6 +17,7 @@ import {
   Target,
   Zap,
 } from "lucide-react";
+import { AliasNote } from "@/components/app/alias-note";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,7 +28,10 @@ import type { Database } from "@/lib/database.types";
 import type { ReportData } from "@/lib/report/types";
 import { getBrowserSupabase } from "@/lib/supabase/browser";
 
-type Brand = Pick<Database["public"]["Tables"]["brands"]["Row"], "id" | "name" | "category" | "auto_mode">;
+type Brand = Pick<
+  Database["public"]["Tables"]["brands"]["Row"],
+  "id" | "name" | "category" | "auto_mode" | "aliases" | "aliases_checked_at"
+>;
 type Run = Pick<
   Database["public"]["Tables"]["diagnosis_runs"]["Row"],
   "id" | "created_at" | "status" | "trigger" | "done_items" | "total_items" | "summary" | "is_mock"
@@ -126,6 +130,14 @@ export function Dashboard({ brands, onNewBrand }: { brands: Brand[]; onNewBrand:
     toast(error ? "저장하지 못했어요." : on ? "매주 월요일 오전 9시에 자동으로 진단해요." : "자동 진단을 껐어요.");
   }
 
+  // 잘못 찾은 표기 빼기 (선택, D-26) — 다음 진단부터 반영
+  async function removeAlias(alias: string) {
+    const aliases = brand.aliases.filter((a) => a !== alias);
+    setBrand((b) => ({ ...b, aliases }));
+    const { error } = await getBrowserSupabase().from("brands").update({ aliases }).eq("id", brand.id);
+    toast(error ? "저장하지 못했어요." : `“${alias}” 표기를 뺐어요. 다음 진단부터 반영돼요.`);
+  }
+
   async function runNow() {
     setBusy(true);
     const res = await fetch("/api/diagnosis/start", {
@@ -154,6 +166,9 @@ export function Dashboard({ brands, onNewBrand }: { brands: Brand[]; onNewBrand:
         <div className="space-y-1">
           <p className="text-sm text-muted-foreground">{brand.category}</p>
           <h1 className="text-2xl font-bold md:text-3xl">{brand.name}</h1>
+          {brand.aliases_checked_at && (
+            <AliasNote name={brand.name} aliases={brand.aliases} onRemove={(a) => void removeAlias(a)} />
+          )}
           {brands.length > 1 && (
             <div className="flex flex-wrap gap-1.5 pt-1">
               {brands.map((b) => (

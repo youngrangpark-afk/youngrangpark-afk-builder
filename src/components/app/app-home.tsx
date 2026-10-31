@@ -7,7 +7,10 @@ import { Card } from "@/components/ui/card";
 import type { Database } from "@/lib/database.types";
 import { getBrowserSupabase } from "@/lib/supabase/browser";
 
-type Brand = Pick<Database["public"]["Tables"]["brands"]["Row"], "id" | "name" | "category" | "auto_mode">;
+type Brand = Pick<
+  Database["public"]["Tables"]["brands"]["Row"],
+  "id" | "name" | "category" | "auto_mode" | "aliases" | "aliases_checked_at"
+>;
 
 // `/app` (D-23): 로그인했고 진단한 브랜드가 있으면 대시보드, 아니면 브랜드 입력
 export function AppHome() {
@@ -34,7 +37,7 @@ export function AppHome() {
         if (!stop) setBrands([]);
         return;
       }
-      const { data: b } = await supabase.from("brands").select("id, name, category, auto_mode").in("id", order);
+      const { data: b } = await supabase.from("brands").select("id, name, category, auto_mode, aliases, aliases_checked_at").in("id", order);
       if (!stop) setBrands(order.map((id) => b?.find((x) => x.id === id)).filter((x): x is Brand => !!x));
     })();
     return () => {

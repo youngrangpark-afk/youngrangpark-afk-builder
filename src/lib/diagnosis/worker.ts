@@ -1,5 +1,6 @@
 import "server-only";
 import type { Json } from "@/lib/database.types";
+import { findBrandAliases } from "@/lib/ai/brand-aliases";
 import { analyzeAnswer } from "@/lib/diagnosis/analyze";
 import { makeDraft } from "@/lib/diagnosis/drafts";
 import { askEngine, enginesAreLive, type EngineName } from "@/lib/diagnosis/engine";
@@ -41,6 +42,19 @@ export async function createRun(
   });
   if (limitError) return { error: "잠시 후 다시 시도해 주세요.", status: 500 };
   if (!allowed) return { error: "오늘 진단이 많아 내일 다시 열려요.", status: 429 };
+
+  // 브랜드 다른 표기 — 아직 찾은 적이 없으면 1번만 (D-26). 키가 없으면 다음 진단 때 다시 찾는다.
+  if (!brand.aliases_checked_at) {
+    const { aliases, usedAi } = await findBrandAliases({
+      name: brand.name,
+      category: brand.category,
+      domain: brand.site_domain,
+    });
+    await admin
+      .from("brands")
+      .update({ aliases, aliases_checked_at: usedAi ? new Date().toISOString() : null })
+      .eq("id", brand.id);
+  }
 
   const { data: run, error } = await admin
     .from("diagnosis_runs")
@@ -96,7 +110,7 @@ export async function processRun(admin: Admin, runId: string, batch: number): Pr
 
   const { data: brand } = await admin
     .from("brands")
-    .select("name, category, site_domain, benchmark_brands")
+    .select("name, category, site_domain, benchmark_brands, aliases")
     .eq("id", run.brand_id)
     .single();
   const { data: items } = await admin.rpc("claim_run_items", { p_run_id: run.id, p_limit: batch });
@@ -132,6 +146,7 @@ export async function processRun(admin: Admin, runId: string, batch: number): Pr
       // 답변 분석 (T-14) — 다시 처리돼도 겹치지 않게 지우고 넣는다
       const found = analyzeAnswer(answer.answerText, answer.rawResponse, {
         selfName: brand?.name ?? "",
+        selfAliases: brand?.aliases ?? [],
         selfDomain: brand?.site_domain ?? null,
         benchmarks: brand?.benchmark_brands ?? [],
       });
@@ -206,7 +221,7 @@ export async function processRun(admin: Admin, runId: string, batch: number): Pr
 async function finalizeRun(
   admin: Admin,
   run: { id: string; user_id: string; brand_id: string; is_mock: boolean; created_at: string; repeats: number },
-  brand: { name: string; category: string; site_domain: string | null },
+  brand: { name: string; category: string; site_domain: string | null; aliases: string[] },
 ) {
   const [{ data: allItems }, { data: answers }, { data: mentions }, { data: citations }] = await Promise.all([
     admin.from("run_items").select("id, question_position, question_text, question_strategy, engine").eq("run_id", run.id),
