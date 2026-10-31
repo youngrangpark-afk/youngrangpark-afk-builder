@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { parseDraft, saveDraft, toDomain, useDraftRaw, type BrandDraft } from "@/lib/draft";
 
-const categoryPresets = ["프래그런스", "뷰티", "패션", "식품", "리빙"];
+// 뷰티 카테고리 7개 (D-24)
+const categoryPresets = ["스킨케어", "메이크업/네일", "뷰티소품", "향수/디퓨저", "헤어케어", "바디케어", "이너뷰티"];
 
 // `/app` 브랜드 입력 (T-04). 저장된 초안을 읽은 뒤에 폼을 그린다.
 export function BrandFormLoader() {

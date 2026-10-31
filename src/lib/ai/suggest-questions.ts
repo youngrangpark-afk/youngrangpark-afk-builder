@@ -38,9 +38,12 @@ export async function replaceQuestion(input: SuggestInput, req: ReplaceRequest):
   return { isMock: true, candidates: [{ ...pick, id: `${req.strategy}-${Date.now().toString(36)}` }] };
 }
 
+// 질문 문장에 넣을 말: "메이크업/네일" → "메이크업" (D-24)
+const topicOf = (category: string) => category.split("/")[0].trim();
+
 // 다시 만들기용 예비 질문 (연습용 예시)
 function mockAlternatives({ category }: SuggestInput): Candidate[] {
-  const c = category.trim();
+  const c = topicOf(category);
   const home = /향|프래그런스|프레그런스|프레이그런스|디퓨저|캔들|퍼퓸|사쉐/.test(c);
   const quick: [string, string][] = home
     ? [
@@ -70,7 +73,7 @@ function mockAlternatives({ category }: SuggestInput): Candidate[] {
 
 // 카테고리 · 기준 브랜드로 그럴듯한 한국어 질문을 만드는 연습용 예시. 실제 노출 가능성 판단이 아니다.
 function mockCandidates({ category, benchmarkBrands }: SuggestInput): Candidate[] {
-  const c = category.trim();
+  const c = topicOf(category);
   const bench = benchmarkBrands.map((b) => b.trim()).filter(Boolean);
   const home = /향|프래그런스|프레그런스|프레이그런스|디퓨저|캔들|퍼퓸|사쉐/.test(c);
 
