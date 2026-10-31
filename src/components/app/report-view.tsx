@@ -50,7 +50,7 @@ function SectionTitle({ eyebrow, title }: { eyebrow: string; title: string }) {
 }
 
 // 리포트 한 장 (T-15 ~ T-17). 예시 리포트(/app/reports/example)와 실제 진단 리포트가 함께 쓴다.
-export function ReportView({ r, footnote }: { r: ReportData; footnote?: string }) {
+export function ReportView({ r, footnote, banner }: { r: ReportData; footnote?: string; banner?: React.ReactNode }) {
   const totalAsks = r.questions.length * r.engines.length * r.repeats;
   const selfHits = r.questions.reduce((s, q) => s + q.hits.openai + q.hits.gemini, 0);
   const perEngine = r.engines.map((e) => ({
@@ -67,6 +67,7 @@ export function ReportView({ r, footnote }: { r: ReportData; footnote?: string }
     <main className="page-glow flex-1">
       <div className="mx-auto max-w-5xl space-y-12 px-4 py-10 md:space-y-16 md:py-16">
         {/* 머리 */}
+        {banner}
         <header className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <Link href="/" className="text-sm font-bold">

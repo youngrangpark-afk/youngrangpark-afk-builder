@@ -41,6 +41,7 @@ export type Database = {
     Tables: {
       brands: {
         Row: {
+          auto_mode: boolean
           benchmark_brands: string[]
           category: string
           created_at: string
@@ -51,6 +52,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          auto_mode?: boolean
           benchmark_brands?: string[]
           category: string
           created_at?: string
@@ -61,6 +63,7 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          auto_mode?: boolean
           benchmark_brands?: string[]
           category?: string
           created_at?: string
@@ -169,6 +172,7 @@ export type Database = {
           status: string
           summary: Json | null
           total_items: number
+          trigger: string
           user_id: string
         }
         Insert: {
@@ -189,6 +193,7 @@ export type Database = {
           status?: string
           summary?: Json | null
           total_items?: number
+          trigger?: string
           user_id: string
         }
         Update: {
@@ -209,6 +214,7 @@ export type Database = {
           status?: string
           summary?: Json | null
           total_items?: number
+          trigger?: string
           user_id?: string
         }
         Relationships: [
@@ -516,10 +522,13 @@ export type Database = {
           body: string
           card_type: string
           created_at: string
+          draft: string | null
           evidence: string
+          goal_id: string | null
           id: string
           position: number
           run_id: string
+          status: string
           title: string
           user_id: string
         }
@@ -527,10 +536,13 @@ export type Database = {
           body: string
           card_type: string
           created_at?: string
+          draft?: string | null
           evidence: string
+          goal_id?: string | null
           id?: string
           position: number
           run_id: string
+          status?: string
           title: string
           user_id: string
         }
@@ -538,10 +550,13 @@ export type Database = {
           body?: string
           card_type?: string
           created_at?: string
+          draft?: string | null
           evidence?: string
+          goal_id?: string | null
           id?: string
           position?: number
           run_id?: string
+          status?: string
           title?: string
           user_id?: string
         }
@@ -552,6 +567,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "card_types"
             referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "task_cards_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_goals"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "task_cards_run_id_fkey"
@@ -621,6 +643,79 @@ export type Database = {
           },
         ]
       }
+      weekly_goals: {
+        Row: {
+          baseline_run_id: string
+          baseline_value: number
+          brand_id: string
+          created_at: string
+          due_date: string
+          evaluated_at: string | null
+          id: string
+          metric: string
+          result_run_id: string | null
+          result_value: number | null
+          status: string
+          target_value: number
+          total: number
+          user_id: string
+        }
+        Insert: {
+          baseline_run_id: string
+          baseline_value: number
+          brand_id: string
+          created_at?: string
+          due_date: string
+          evaluated_at?: string | null
+          id?: string
+          metric?: string
+          result_run_id?: string | null
+          result_value?: number | null
+          status?: string
+          target_value: number
+          total: number
+          user_id: string
+        }
+        Update: {
+          baseline_run_id?: string
+          baseline_value?: number
+          brand_id?: string
+          created_at?: string
+          due_date?: string
+          evaluated_at?: string | null
+          id?: string
+          metric?: string
+          result_run_id?: string | null
+          result_value?: number | null
+          status?: string
+          target_value?: number
+          total?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_goals_baseline_run_id_fkey"
+            columns: ["baseline_run_id"]
+            isOneToOne: true
+            referencedRelation: "diagnosis_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weekly_goals_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weekly_goals_result_run_id_fkey"
+            columns: ["result_run_id"]
+            isOneToOne: false
+            referencedRelation: "diagnosis_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -656,6 +751,7 @@ export type Database = {
         Args: { p_kind: string; p_limit: number; p_scope: string }
         Returns: boolean
       }
+      set_cron_secret: { Args: { p_secret: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

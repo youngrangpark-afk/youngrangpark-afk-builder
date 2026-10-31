@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function QuestionsPage() {
   return (
     <main className="page-glow flex-1 pb-16">
-      <AppHeader step="2 / 3 · 질문 고르기" />
+      <AppHeader step="진단 준비" />
       <div className="mx-auto max-w-xl px-4 pt-10 md:pt-16">
         <QuestionsView />
       </div>

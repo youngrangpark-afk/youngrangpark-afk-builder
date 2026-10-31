@@ -145,10 +145,10 @@ function BrandForm({ initial }: { initial: BrandDraft | null }) {
           </div>
 
           <Button type="submit" size="lg" className="bg-brand h-12 w-full text-base hover:opacity-90">
-            질문 만들기 <ArrowRight />
+            진단 시작하기 <ArrowRight />
           </Button>
           <p className="text-center text-xs text-muted-foreground">
-            입력한 내용은 지금 이 브라우저에만 저장돼요. 로그인은 진단을 시작할 때 해요.
+            추천 질문 5개로 자동 진단해요. 끝나면 이번 주 목표와 액션 플랜이 만들어지고, 매주 월요일 자동으로 다시 재요.
           </p>
         </form>
       </CardContent>

@@ -241,6 +241,25 @@ card_types ── task_cards.card_type      question_templates ── questions.
 - 보안 점검: 새 경고 없음. "유출 비밀번호 확인 꺼짐" 경고 1건은 비밀번호 로그인을 쓰지 않아(구글 · 이메일 링크) 해당 없음
 - 접근 점검 (테스트 계정 A · B, 2026-10-26): 로그인 없이 진단 시작 401 · B 가 A 의 브랜드로 시작 404 · B 가 A 의 진단 진행 404 · B 가 A 의 답변 보기 0건 · A 두 번째 무료 진단 409(같은 진단으로 안내) · A 진단 30칸 모두 완료, 답변 원문 30개 저장. 점검 계정 · 자료 삭제
 
+## 8-2. 주간 루프 추가 (2026-10-31, D-23)
+| 바뀌는 곳 | 칸 | 설명 |
+|---|---|---|
+| `brands` | `auto_mode boolean 필수 기본 true` | 매주 자동 재진단 켜짐/꺼짐 (오너가 바꿀 수 있음) |
+| `diagnosis_runs` | `trigger text 필수 기본 manual` (`manual` · `weekly`) | 사람이 시작했나, 매주 자동인가 |
+| `task_cards` | `draft text` · `status text 필수 기본 auto` (`auto` · `done` · `skipped`) · `goal_id uuid` | 실행 초안 · 진행 상태 · 어느 목표의 액션인가 |
+| 새 표 `weekly_goals` | user_id · brand_id · baseline_run_id · result_run_id · metric(`ai_mentions`) · baseline_value · total · target_value · due_date · status(`active` · `achieved` · `missed`) · result_value · evaluated_at | 주간 목표 1개 = 기준 진단 1개 |
+
+누가 읽고 쓰나 (추가분):
+| 표 / 칸 | 로그인 안 한 사람 | 본인 | 다른 사용자 | 서버 |
+|---|---|---|---|---|
+| weekly_goals | ✗ | 보기 | ✗ | 전부 |
+| task_cards.status | ✗ | **이 칸만 수정**(완료 · 보류 표시) | ✗ | 전부 |
+| brands.auto_mode | ✗ | 수정 (brands 수정 규칙 그대로) | ✗ | 전부 |
+
+서버 전용 기능 · 예약 실행:
+- `set_cron_secret(text)` — 예약 실행이 우리 서버를 부를 때 쓰는 비밀값을 Supabase Vault 에 저장 (service_role 만). 비밀값 자체는 SQL 파일에 쓰지 않는다.
+- pg_cron + pg_net: **1분마다** `/api/cron/tick` 호출 → 진행 중인 진단을 처리하고, 월요일 09:00(KST) 이후에는 자동 모드 브랜드의 주간 재진단을 만든다. 호출에는 `CRON_SECRET` 이 있어야 한다.
+
 ## 9. 만든 기록과 점검 결과 (2026-10-25)
 - 적용한 SQL: `supabase/migrations/20261025084144_init_schema.sql` (표 13개 · 제약 · RLS 정책) · `20261025084148_seed_rules.sql` (card_types 6 · question_templates 8)
 - 보안 점검 (`npx supabase db advisors --linked --type all`): 경고 · 오류 0건. 참고(INFO)만 — `usage_counters` 에 정책 없음(일부러 서버 전용) · 새 인덱스 아직 미사용

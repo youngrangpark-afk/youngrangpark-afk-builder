@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -61,13 +62,17 @@ export function CandidatesPanel({ draft }: { draft: BrandDraft }) {
   const [loginOpen, setLoginOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedTo, setSavedTo] = useState<string | null>(null); // 저장한 계정 이메일
+  const [startError, setStartError] = useState<string | null>(null);
   const router = useRouter();
+  // D-23: 기본은 자동 — 추천 조합으로 바로 진단. "?pick=1" 이면 직접 고르기 화면 (선택)
+  const [pickMode] = useState(() => new URLSearchParams(window.location.search).get("pick") === "1");
+  const autoStarted = useRef(false);
 
   // 로그인한 뒤 브라우저의 브랜드 · 질문을 내 계정으로 옮긴다 (T-09). 진단 실행 자체는 T-10 · T-11.
-  async function saveForDiagnosis() {
-    const current = picks;
+  async function saveForDiagnosis(current: Picks | null = picks) {
     if (!current || current.selected.length !== PICK_COUNT) return;
     setSaving(true);
+    setStartError(null);
     try {
       const { data } = await getBrowserSupabase().auth.getUser();
       if (!data.user) {
@@ -94,9 +99,13 @@ export function CandidatesPanel({ draft }: { draft: BrandDraft }) {
         router.push(`/app/reports/${result.runId}`);
         return;
       }
-      toast(result.error ?? "진단을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      const msg = result.error ?? "진단을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.";
+      setStartError(msg);
+      toast(msg);
     } catch (e) {
-      toast((e as Error).message || "저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      const msg = (e as Error).message || "저장하지 못했어요. 잠시 후 다시 시도해 주세요.";
+      setStartError(msg);
+      toast(msg);
     } finally {
       setSaving(false);
     }
@@ -107,6 +116,7 @@ export function CandidatesPanel({ draft }: { draft: BrandDraft }) {
     const params = new URLSearchParams(window.location.search);
     const login = params.get("login");
     if (!login) return;
+    autoStarted.current = true; // 로그인에서 돌아온 경우 아래 자동 시작과 겹치지 않게
     params.delete("login");
     const rest = params.toString();
     window.history.replaceState(null, "", window.location.pathname + (rest ? `?${rest}` : ""));
@@ -114,7 +124,7 @@ export function CandidatesPanel({ draft }: { draft: BrandDraft }) {
       toast("로그인 링크가 만료됐거나 이미 쓰였어요. 다시 받아 주세요.");
       return;
     }
-    void Promise.resolve().then(saveForDiagnosis);
+    void Promise.resolve().then(() => saveForDiagnosis());
     // 처음 한 번만 (저장된 고른 질문은 첫 렌더 때 이미 읽혀 있다)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -143,6 +153,23 @@ export function CandidatesPanel({ draft }: { draft: BrandDraft }) {
     // input 은 key 로 대표된다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, attempt, picks]);
+
+  // 자동 시작 (D-23): 질문이 준비되면 추천 조합을 적용하고 바로 진단을 시작한다 (로그인 안 했으면 로그인 창)
+  useEffect(() => {
+    if (pickMode || autoStarted.current || !picks) return;
+    autoStarted.current = true;
+    const rec = picks.recommendation;
+    void Promise.resolve().then(() => {
+      let current = picks;
+      if (current.selected.length !== PICK_COUNT && rec && rec.ids.length === PICK_COUNT) {
+        current = { ...picks, selected: rec.ids.slice(0, PICK_COUNT) };
+        writeStored(key, current);
+        setPicks(current);
+      }
+      return saveForDiagnosis(current);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [picks, pickMode]);
 
   function update(fn: (p: Picks) => Picks) {
     setPicks((prev) => {
@@ -184,6 +211,59 @@ export function CandidatesPanel({ draft }: { draft: BrandDraft }) {
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="h-20 animate-pulse rounded-2xl bg-muted" />
         ))}
+      </div>
+    );
+  }
+
+  // 자동 모드 화면: 고르기 목록 대신 "자동으로 시작해요" 카드 하나 (D-23)
+  if (!pickMode) {
+    const waitingLogin = loginOpen && !saving;
+    return (
+      <div className="space-y-6">
+        <Card className="card-glow rounded-2xl ring-primary/40">
+          <CardHeader className="gap-3">
+            <Badge className="w-fit gap-1 rounded-full">
+              <Sparkles className="size-3" /> 자동 진행
+            </Badge>
+            <CardTitle className="flex items-center gap-2 text-xl leading-snug">
+              {startError ? (
+                "진단을 시작하지 못했어요"
+              ) : waitingLogin ? (
+                "로그인하면 바로 시작해요"
+              ) : (
+                <>
+                  <Loader2 className="size-5 animate-spin text-primary" /> 추천 질문 5개로 진단을 시작하는 중이에요
+                </>
+              )}
+            </CardTitle>
+            <CardDescription className="leading-relaxed">
+              {startError ??
+                "공략형 · 장기형을 섞은 추천 조합으로 ChatGPT · Gemini 에 물어봐요. 끝나면 이번 주 목표와 액션 플랜이 자동으로 만들어져요."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {picks.recommendation && (
+              <ol className="space-y-1 text-sm text-muted-foreground">
+                {picks.recommendation.ids.map((id, i) => (
+                  <li key={id}>
+                    {i + 1}. {picks.candidates.find((c) => c.id === id)?.text}
+                  </li>
+                ))}
+              </ol>
+            )}
+            <div className="flex flex-wrap gap-2 pt-1">
+              {(startError || waitingLogin) && (
+                <Button className="bg-brand hover:opacity-90" disabled={saving} onClick={() => void saveForDiagnosis()}>
+                  {waitingLogin ? "로그인하고 시작" : "다시 시도"}
+                </Button>
+              )}
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/app/questions?pick=1">질문 직접 고르기 (선택)</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        <LoginDialog open={loginOpen} onOpenChange={setLoginOpen} />
       </div>
     );
   }

@@ -21,7 +21,7 @@ const POLL_MS = 2000;
 function shell(children: React.ReactNode) {
   return (
     <main className="page-glow flex-1 pb-16">
-      <AppHeader step="3 / 3 · 진단" />
+      <AppHeader step="진단" />
       <div className="mx-auto max-w-xl px-4 pt-10 md:pt-16">{children}</div>
     </main>
   );
@@ -79,7 +79,22 @@ export function RunProgress() {
     };
   }, [id]);
 
-  if (report) return <ReportView r={report} />;
+  if (report)
+    return (
+      <ReportView
+        r={report}
+        banner={
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card p-4">
+            <p className="text-sm">
+              <strong>이번 주 목표 · 액션 플랜(실행 초안)</strong>이 대시보드에 자동으로 만들어졌어요.
+            </p>
+            <Button asChild size="sm" className="bg-brand hover:opacity-90">
+              <Link href="/app">대시보드로</Link>
+            </Button>
+          </div>
+        }
+      />
+    );
 
   if (error && !state) {
     return shell(
@@ -150,8 +165,8 @@ export function RunProgress() {
           </p>
           {running && (
             <p className="rounded-xl bg-muted p-3 text-xs leading-relaxed text-muted-foreground">
-              지금은 <strong className="text-foreground">이 화면을 열어 두는 동안</strong> 진단이 진행돼요. 창을 닫아도
-              계속되게 하는 기능과 완료 메일은 곧 붙여요.
+              <strong className="text-foreground">창을 닫아도 서버에서 계속 진행돼요.</strong> 끝나면 이번 주 목표와 액션
+              플랜이 대시보드에 자동으로 만들어져요.
             </p>
           )}
           {error && <p className="text-xs text-muted-foreground">{error}</p>}

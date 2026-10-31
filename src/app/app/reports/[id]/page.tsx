@@ -16,7 +16,7 @@ export default function ReportPage() {
     <Suspense
       fallback={
         <main className="page-glow flex-1 pb-16">
-          <AppHeader step="3 / 3 · 진단" />
+          <AppHeader step="진단" />
           <div className="mx-auto max-w-xl px-4 pt-10 md:pt-16">
             <Card className="h-56 animate-pulse rounded-2xl" aria-label="불러오는 중" />
           </div>
