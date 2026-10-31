@@ -50,9 +50,9 @@
 }
 
 /* DESIGN.md 2. 디자인 토큰 — 라이트(:root, 기본 화면 · D-14) / 다크(.dark, 보관) */
-/* 흰 배경 + 순검정이 아닌 부드러운 글자색(대비 16.6:1)으로 눈 피로를 줄인다 */
+/* 연보라 배경 + 흰 카드로 면을 나누고(D-29), 순검정이 아닌 부드러운 글자색으로 눈 피로를 줄인다 */
 :root {
-  --background: #FFFFFF;
+  --background: #EEEAF8;
   --foreground: #1F1D26;
   --card: #FFFFFF;
   --card-foreground: #1F1D26;
@@ -68,8 +68,8 @@
   --accent-foreground: #1F1D26;
   --destructive: #DC2626;
   --destructive-foreground: #FFFFFF;
-  --border: #ECEAF1;
-  --input: #E4E1EA;
+  --border: #E2DCF0;
+  --input: #DCD6EA;
   --ring: #7C3AED;
   --chart-1: #4F5BEA;
   --chart-2: #7C3AED;

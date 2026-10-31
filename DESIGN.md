@@ -20,11 +20,11 @@
 
 ## 2. 디자인 토큰 (globals.css)
 기본 화면은 **흰 배경 라이트**다 (2026-10-26 변경, D-14 — `<html>` 에 dark 클래스 없음). 다크 값은 보관만 한다.
-눈 피로를 줄이려고 배경은 흰색, 글자는 순검정(대비 21:1) 대신 부드러운 검정(#1F1D26, 16.6:1), 면은 아주 옅은 회색으로 쓴다.
+눈 피로를 줄이려고 배경은 연보라(#EEEAF8, 2026-10-31 D-29 — 흰 카드와 톤을 나눠 카드가 잘 보이게), 글자는 순검정(대비 21:1) 대신 부드러운 검정(#1F1D26, 16.6:1), 면은 아주 옅은 회색으로 쓴다.
 
 | 토큰 | 라이트 (기본) | 다크 (보관) |
 |---|---|---|
-| background | #FFFFFF | #0B0A10 |
+| background | #EEEAF8 (연보라, D-29) | #0B0A10 |
 | foreground | #1F1D26 | #F4F2F8 |
 | card | #FFFFFF | #16131F |
 | card-foreground | #1F1D26 | #F4F2F8 |
@@ -40,8 +40,8 @@
 | accent-foreground | #1F1D26 | #F4F2F8 |
 | destructive | #DC2626 | #F0526B |
 | destructive-foreground | #FFFFFF | #FFFFFF |
-| border | #ECEAF1 | #2A2636 |
-| input | #E4E1EA | #2E2A3A |
+| border | #E2DCF0 | #2A2636 |
+| input | #DCD6EA | #2E2A3A |
 | ring | #7C3AED | #A78BFA |
 | radius | 1rem | 1rem |
 | glow (빛 번짐) | #C4B5FD (옅게) | #7C3AED |

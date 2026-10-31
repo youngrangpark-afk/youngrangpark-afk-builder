@@ -14,7 +14,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ReportActions } from "@/components/report-actions";
 import { engineLabel, sourceTypeLabel, type ReportData, type Strategy } from "@/lib/report/types";
 
 // 진단 1번의 결과 조각들 (T-15 · T-16). 대시보드 한 화면(D-28) 안에서 차례로 쓴다.
@@ -52,17 +51,21 @@ export function ReportHero({ r, dateLabel }: { r: ReportData; dateLabel: string 
   const quickWins = r.questions.filter((q) => q.strategy === "quick_win");
   const quickWinHit = quickWins.filter((q) => q.hits.openai + q.hits.gemini > 0).length;
   return (
-    <section className="card-glow space-y-3 rounded-2xl border p-6 text-center md:p-10">
+    <section className="card-glow space-y-3 rounded-2xl border bg-card p-6 text-center md:p-10">
       <p className="text-sm text-muted-foreground">{dateLabel} 진단</p>
       <h2 className="text-3xl leading-tight font-bold tracking-tight md:text-5xl">
         AI 에게 {totalAsks}번 물으니
         <br />
         <span className="text-brand">{selfHits}번</span> 우리를 말했어요
       </h2>
-      <p className="mx-auto max-w-xl text-sm text-muted-foreground md:text-base">
-        질문 {r.questions.length}개를 {r.engines.map((e) => engineLabel[e]).join(" · ")} 에 {r.repeats}번씩 물어본 결과예요
-        (노출 빈도 {pct(selfHits, totalAsks)}%). 공략형 질문 {quickWins.length}개 중 {quickWinHit}개에서 이미 이름이 나왔어요.
-      </p>
+      <div className="flex flex-wrap justify-center gap-2 pt-1">
+        <Badge variant="secondary" className="rounded-full">
+          노출 빈도 {pct(selfHits, totalAsks)}%
+        </Badge>
+        <Badge variant="secondary" className="rounded-full">
+          공략형 질문 {quickWins.length}개 중 {quickWinHit}개에서 나옴
+        </Badge>
+      </div>
     </section>
   );
 }
@@ -175,21 +178,6 @@ export function ReportDetails({ r }: { r: ReportData }) {
   );
 }
 
-// 상세 리포트 안내 (선택 상품)
-export function ReportUpsell() {
-  return (
-    <section className="card-glow space-y-4 rounded-2xl border p-6 text-center md:p-10">
-      <h2 className="text-xl font-bold md:text-2xl">
-        질문별 원인과 할 일을 <span className="text-brand">더 자세히</span> 받아 보세요
-      </h2>
-      <p className="text-sm text-muted-foreground">상세 리포트에는 질문마다 인용된 출처 목록과 매체별 실행 순서가 들어가요.</p>
-      <div className="flex justify-center">
-        <ReportActions />
-      </div>
-    </section>
-  );
-}
-
 // 진단 조건 + 답변 원문
 export function ReportConditions({ r }: { r: ReportData }) {
   return (
@@ -211,10 +199,7 @@ export function ReportConditions({ r }: { r: ReportData }) {
               질문마다 엔진별 {r.repeats}번
             </li>
           </ul>
-          <p className="rounded-xl bg-muted p-3 text-xs leading-relaxed text-muted-foreground">
-            이 결과는 정해진 질문과 검색 조건에서 API 로 받은 답이에요. 실제 앱에서 모든 사용자에게 똑같이 보이는 결과는
-            아니에요.
-          </p>
+          <p className="text-xs text-muted-foreground">정해진 질문 · 검색 조건으로 받은 답이라, 사람마다 보는 답과는 다를 수 있어요.</p>
           <Accordion type="single" collapsible>
             {r.rawAnswers.map((a, i) => (
               <AccordionItem key={i} value={`raw-${i}`}>

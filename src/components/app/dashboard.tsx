@@ -18,7 +18,7 @@ import {
   Zap,
 } from "lucide-react";
 import { AliasNote } from "@/components/app/alias-note";
-import { ReportConditions, ReportDetails, ReportHero, ReportUpsell, SectionTitle } from "@/components/app/report-view";
+import { ReportConditions, ReportDetails, ReportHero, SectionTitle } from "@/components/app/report-view";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -317,18 +317,12 @@ export function Dashboard({
               AI 답변 노출 <span className="text-brand">{goal.baseline_value}번 → {goal.target_value}번</span>
               <span className="text-base font-medium text-muted-foreground"> / {goal.total}번 중</span>
             </CardTitle>
-            <CardDescription className="leading-relaxed">
-              ChatGPT · Gemini 에 같은 질문을 {goal.total}번 물었을 때 우리 브랜드가 나온 횟수예요.{" "}
-              {member
-                ? "다음 주 월요일 자동 진단으로 결과를 확인해요."
-                : "다음 주에 다시 진단하면 목표를 이뤘는지 보여 드려요."}
+            <CardDescription>
+              {member ? "다음 주 월요일 자동 진단으로 확인해요" : "다음 주에 다시 진단하면 달성 여부를 보여 드려요"}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Progress value={Math.round((goal.baseline_value / Math.max(goal.target_value, 1)) * 100)} />
-            <p className="text-xs text-muted-foreground">
-              지표: AI 답변 노출 수 · AI 검색 유입(방문 수)은 브랜드 사이트 Google Analytics 를 연결하면 함께 보여 드려요.
-            </p>
             {lastEvaluated && lastEvaluated.result_value !== null && (
               <>
                 <Separator />
@@ -358,9 +352,6 @@ export function Dashboard({
               </span>
             }
           />
-          <p className="text-sm text-muted-foreground">
-            실행 초안까지 만들어 뒀어요. 완료 · 보류 표시는 선택이에요 — 표시하지 않아도 다음 진단에서 결과를 재요.
-          </p>
           <div className="space-y-3">
             {cards.map((c) => (
               <ActionCard key={c.id} c={c} onStatus={setStatus} />
@@ -420,7 +411,6 @@ export function Dashboard({
       {report && (
         <div id="detail" className="space-y-10 scroll-mt-6">
           <ReportDetails r={report} />
-          <ReportUpsell />
           <ReportConditions r={report} />
         </div>
       )}
