@@ -12,6 +12,7 @@ export const exampleBrand: Brand = {
   name: "예시 브랜드",
   category: "향수/디퓨저",
   auto_mode: true,
+  action_mode: "auto",
   aliases: ["Example Brand"],
   aliases_checked_at: "2026-10-26T00:00:00Z",
 };

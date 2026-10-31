@@ -12,7 +12,7 @@ export default function ExampleReportPage() {
   return (
     <main className="page-glow flex-1 pb-16">
       <AppHeader step="예시" />
-      <div className="mx-auto max-w-4xl px-4 pt-10 md:pt-14">
+      <div className="mx-auto max-w-4xl px-4 pt-4 md:pt-6">
         <ExampleDashboard />
       </div>
     </main>

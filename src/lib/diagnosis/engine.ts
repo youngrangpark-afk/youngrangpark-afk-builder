@@ -23,7 +23,7 @@ export type EngineAnswer = {
   requestMeta: Json;
 };
 
-export const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+export const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3.5-flash-lite";
 
 // 실제로 물을 수 있는 엔진. ChatGPT 는 실제 호출을 만들면 여기에 추가한다.
 export function liveEngines(): EngineName[] {

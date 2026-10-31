@@ -276,6 +276,12 @@ card_types ── task_cards.card_type      question_templates ── questions.
 누가 읽고 쓰나: 로그인 안 한 사람 ✗ · 본인 **보기만**(내가 이용자인지 확인) · 다른 사용자 ✗ · 서버(운영자 스크립트) 전부. 본인은 추가 · 수정 · 삭제 불가.
 접근 점검 (2026-10-31, 테스트 계정): 본인이 스스로 켜기 → 막힘 ✓ · 다른 사람 권한 보기 → 안 보임 ✓ · 로그인 안 한 사람 → 안 보임 ✓
 
+## 8-5. 실행 모드 (2026-10-31, D-32)
+| 바뀌는 곳 | 칸 | 설명 |
+|---|---|---|
+| `brands` | `action_mode text 필수 기본 auto` (`auto` · `confirm`) | 할 일을 자동으로 진행할지, 오너 승인 후 진행할지. 본인 수정 (brands 규칙 그대로) |
+| `task_cards.status` | 값에 `approved` 추가 (`auto` · `approved` · `done` · `skipped`) | 확인 모드에서 오너가 승인함. 본인은 이 칸만 수정 (기존 규칙 그대로) |
+
 서버 전용 기능 · 예약 실행:
 - `set_cron_secret(text)` — 예약 실행이 우리 서버를 부를 때 쓰는 비밀값을 Supabase Vault 에 저장 (service_role 만). 비밀값 자체는 SQL 파일에 쓰지 않는다.
 - pg_cron + pg_net: **1분마다** `/api/cron/tick` 호출 → 진행 중인 진단을 처리하고, 월요일 09:00(KST) 이후에는 자동 모드 브랜드의 주간 재진단을 만든다. 호출에는 `CRON_SECRET` 이 있어야 한다.

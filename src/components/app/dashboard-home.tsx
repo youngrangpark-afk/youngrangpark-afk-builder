@@ -31,7 +31,7 @@ export function DashboardHome() {
       const { data: b } = order.length
         ? await supabase
             .from("brands")
-            .select("id, name, category, auto_mode, aliases, aliases_checked_at")
+            .select("id, name, category, auto_mode, action_mode, aliases, aliases_checked_at")
             .in("id", order)
         : { data: [] };
       if (!stop) setBrands(order.map((id) => b?.find((x) => x.id === id)).filter((x): x is Brand => !!x));

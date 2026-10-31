@@ -57,7 +57,7 @@ function RunBoard({ runId }: { runId: string }) {
       if (!run) return;
       const { data: b } = await supabase
         .from("brands")
-        .select("id, name, category, auto_mode, aliases, aliases_checked_at")
+        .select("id, name, category, auto_mode, action_mode, aliases, aliases_checked_at")
         .eq("id", run.brand_id)
         .maybeSingle();
       if (!stop && b) setBrand(b);
@@ -131,7 +131,7 @@ export function RunProgress() {
     return (
       <main className="page-glow flex-1 pb-16">
         <AppHeader step="진단 결과" />
-        <div className="mx-auto max-w-4xl px-4 pt-10 md:pt-14">
+        <div className="mx-auto max-w-4xl px-4 pt-4 md:pt-6">
           <RunBoard runId={id} />
         </div>
       </main>

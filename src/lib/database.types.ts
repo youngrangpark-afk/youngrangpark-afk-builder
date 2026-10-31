@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       brands: {
         Row: {
+          action_mode: string
           aliases: string[]
           aliases_checked_at: string | null
           auto_mode: boolean
@@ -29,6 +30,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          action_mode?: string
           aliases?: string[]
           aliases_checked_at?: string | null
           auto_mode?: boolean
@@ -42,6 +44,7 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          action_mode?: string
           aliases?: string[]
           aliases_checked_at?: string | null
           auto_mode?: boolean
