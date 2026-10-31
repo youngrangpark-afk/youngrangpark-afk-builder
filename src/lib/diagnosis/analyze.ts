@@ -15,21 +15,39 @@ export function analyzeAnswer(answerText: string, raw: Json | null, ctx: Context
   return { mentions: findMentions(answerText, ctx), citations: findCitations(answerText, raw, ctx) };
 }
 
+// 이름 비교용으로 띄어쓰기 · 기호를 빼고 소문자로 (D-25). pos[i] = 줄인 글자 i 의 원문 위치.
+// "호텔도슨" = "호텔 도슨" = "HOTEL-DAWSON" 처럼 쓰는 모양만 다른 표기를 같은 이름으로 본다.
+const IGNORED = /[\s·.,\-_'’"“”&/()]/;
+function squash(s: string) {
+  let out = "";
+  const pos: number[] = [];
+  for (let i = 0; i < s.length; i++) {
+    if (IGNORED.test(s[i])) continue;
+    out += s[i].toLowerCase();
+    pos.push(i);
+  }
+  return { out, pos };
+}
+
 function findMentions(text: string, { selfName, benchmarks }: Context): Mention[] {
-  const found: { name: string; role: BrandRole; at: number }[] = [];
+  const flat = squash(text);
+  const found: { key: string; name: string; role: BrandRole; at: number }[] = [];
   const add = (name: string, role: BrandRole) => {
-    const at = text.indexOf(name);
-    if (name && at >= 0 && !found.some((f) => f.name === name)) found.push({ name, role, at });
+    const key = squash(name).out;
+    const at = key ? flat.out.indexOf(key) : -1;
+    if (at >= 0 && !found.some((f) => f.key === key)) found.push({ key, name, role, at: flat.pos[at] });
   };
   add(selfName.trim(), "self");
   for (const b of benchmarks) add(b.trim(), "benchmark");
   // 경쟁사 자동 추출 (D-02) — 연습용 예시 답변의 "브랜드 A/B/C" 표기. 실제 연결 때 Claude 추출로 바뀐다.
   // 내 브랜드 · 기준 브랜드 이름 안에 든 글자(예: "기준 브랜드 D" 속 "브랜드 D")는 경쟁사로 세지 않는다.
-  let rest = text;
-  for (const name of [selfName, ...benchmarks].map((n) => n.trim()).filter(Boolean)) {
-    rest = rest.split(name).join(" ".repeat(name.length));
+  const rest = text.split("");
+  for (const key of [selfName, ...benchmarks].map((n) => squash(n).out).filter(Boolean)) {
+    for (let at = flat.out.indexOf(key); at >= 0; at = flat.out.indexOf(key, at + 1)) {
+      rest.fill(" ", flat.pos[at], flat.pos[at + key.length - 1] + 1);
+    }
   }
-  for (const m of rest.matchAll(/브랜드 [A-Z]\b/g)) add(m[0], "competitor");
+  for (const m of rest.join("").matchAll(/브랜드 [A-Z]\b/g)) add(m[0], "competitor");
 
   return found
     .sort((a, b) => a.at - b.at)
